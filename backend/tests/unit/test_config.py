@@ -29,3 +29,20 @@ def test_cors_origins_accepts_json_array_string() -> None:
 def test_cors_origins_default() -> None:
     s = Settings()
     assert "http://localhost:5173" in s.cors_allow_origins
+
+
+def test_cors_origins_comma_separated_via_real_env_var(monkeypatch) -> None:
+    # Regression test: pydantic-settings reads env vars through a different
+    # code path than direct kwargs (its EnvSettingsSource attempts its own
+    # JSON decode for list[str] fields *before* field validators run), and
+    # that path crashed the app in production on a plain comma-separated
+    # value even though the equivalent direct-kwarg test above passed.
+    monkeypatch.setenv("CORS_ALLOW_ORIGINS", "https://a.example.com,https://b.example.com")
+    s = Settings()
+    assert s.cors_allow_origins == ["https://a.example.com", "https://b.example.com"]
+
+
+def test_cors_origins_json_array_via_real_env_var(monkeypatch) -> None:
+    monkeypatch.setenv("CORS_ALLOW_ORIGINS", '["https://a.example.com","https://b.example.com"]')
+    s = Settings()
+    assert s.cors_allow_origins == ["https://a.example.com", "https://b.example.com"]

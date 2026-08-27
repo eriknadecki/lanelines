@@ -1,7 +1,8 @@
 import json
+from typing import Annotated
 
 from pydantic import field_validator
-from pydantic_settings import BaseSettings, SettingsConfigDict
+from pydantic_settings import BaseSettings, NoDecode, SettingsConfigDict
 
 
 class Settings(BaseSettings):
@@ -13,7 +14,16 @@ class Settings(BaseSettings):
     access_token_expire_minutes: int = 30
     refresh_token_expire_days: int = 30
     starting_balance_cents: int = 1_000_000
-    cors_allow_origins: list[str] = ["http://localhost:5173", "http://127.0.0.1:5173"]
+    # NoDecode: pydantic-settings otherwise tries to JSON-decode any list[str]
+    # env var itself *before* our validator below ever runs, and raises a
+    # hard SettingsError on a plain comma-separated string instead of
+    # falling through to it. This crashed the app in production (a real
+    # config value from a real env var), even though direct-kwarg unit
+    # tests of the validator passed — those never exercised this code path.
+    cors_allow_origins: Annotated[list[str], NoDecode] = [
+        "http://localhost:5173",
+        "http://127.0.0.1:5173",
+    ]
 
     @field_validator("database_url")
     @classmethod
