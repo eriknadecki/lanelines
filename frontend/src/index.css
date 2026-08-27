@@ -317,18 +317,40 @@ th {
   margin-bottom: 16px;
 }
 
-.admin-nav {
+.admin-layout {
   display: flex;
-  align-items: center;
-  gap: 10px;
-  margin-bottom: 20px;
-  font-weight: 600;
-  color: var(--text);
+  align-items: flex-start;
+  gap: 24px;
 }
-.admin-nav select {
-  font-weight: normal;
-  padding: 6px 10px;
-  min-width: 220px;
+.admin-sidebar {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 0 0 200px;
+  position: sticky;
+  top: 16px;
+}
+.admin-sidebar-item {
+  text-align: left;
+  background: transparent;
+  border: none;
+  border-radius: 6px;
+  padding: 8px 12px;
+  font-size: 14px;
+  color: var(--text);
+  cursor: pointer;
+}
+.admin-sidebar-item:hover {
+  background: var(--bg);
+}
+.admin-sidebar-item.active {
+  background: var(--accent);
+  color: var(--accent-contrast);
+  font-weight: 600;
+}
+.admin-content {
+  flex: 1;
+  min-width: 0;
 }
 
 .checkbox-list {

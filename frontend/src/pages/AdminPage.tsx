@@ -114,41 +114,52 @@ export function AdminPage() {
   return (
     <div>
       <h1>Admin</h1>
-      <label className="admin-nav">
-        Viewing
-        <select value={activeSection} onChange={(e) => setActiveSection(e.target.value as AdminSectionId)}>
+      <div className="admin-layout">
+        <nav className="admin-sidebar">
           {ADMIN_SECTIONS.map((s) => (
-            <option key={s.id} value={s.id}>
+            <button
+              key={s.id}
+              type="button"
+              className={"admin-sidebar-item" + (activeSection === s.id ? " active" : "")}
+              onClick={() => setActiveSection(s.id)}
+            >
               {s.label}
-            </option>
+            </button>
           ))}
-        </select>
-      </label>
-
-      {activeSection === "invites" && <InviteSection />}
-      {activeSection === "venues" && (
-        <VenueSection venues={venues} onCreated={refreshVenues} onDeleted={refreshVenues} />
-      )}
-      {activeSection === "teams" && (
-        <TeamSection teams={teams} venues={venues} onCreated={refreshTeams} onDeleted={refreshTeams} />
-      )}
-      {activeSection === "roster" && <SwimmerSection teams={teams} />}
-      {activeSection === "meets" && (
-        <MeetSection meets={meets} teams={teams} venues={venues} onCreated={refreshMeets} onDeleted={refreshMeets} />
-      )}
-      {activeSection === "meet-events" && <MeetEventSection meets={meets} />}
-      {activeSection === "outcomes" && (
-        <MarketGroupSection
-          teams={teams}
-          meets={meets}
-          groups={groups}
-          onCreated={refreshGroups}
-          onDeleted={refreshGroups}
-        />
-      )}
-      {activeSection === "ticker" && <TickerSection meets={meets} />}
-      {activeSection === "close-market" && <CloseMarketSection groups={groups} onChanged={refreshGroups} />}
-      {activeSection === "resolve" && <ResolveSection groups={groups} onResolved={refreshGroups} />}
+        </nav>
+        <div className="admin-content">
+          {activeSection === "invites" && <InviteSection />}
+          {activeSection === "venues" && (
+            <VenueSection venues={venues} onCreated={refreshVenues} onDeleted={refreshVenues} />
+          )}
+          {activeSection === "teams" && (
+            <TeamSection teams={teams} venues={venues} onCreated={refreshTeams} onDeleted={refreshTeams} />
+          )}
+          {activeSection === "roster" && <SwimmerSection teams={teams} />}
+          {activeSection === "meets" && (
+            <MeetSection
+              meets={meets}
+              teams={teams}
+              venues={venues}
+              onCreated={refreshMeets}
+              onDeleted={refreshMeets}
+            />
+          )}
+          {activeSection === "meet-events" && <MeetEventSection meets={meets} />}
+          {activeSection === "outcomes" && (
+            <MarketGroupSection
+              teams={teams}
+              meets={meets}
+              groups={groups}
+              onCreated={refreshGroups}
+              onDeleted={refreshGroups}
+            />
+          )}
+          {activeSection === "ticker" && <TickerSection meets={meets} />}
+          {activeSection === "close-market" && <CloseMarketSection groups={groups} onChanged={refreshGroups} />}
+          {activeSection === "resolve" && <ResolveSection groups={groups} onResolved={refreshGroups} />}
+        </div>
+      </div>
     </div>
   );
 }
