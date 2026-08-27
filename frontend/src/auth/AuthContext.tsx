@@ -5,7 +5,7 @@ import type { TokenResponse, UserOut } from "../api/types";
 interface AuthContextValue {
   user: UserOut | null;
   loading: boolean;
-  applyTokens: (tokens: TokenResponse) => Promise<void>;
+  applyTokens: (tokens: TokenResponse, remember?: boolean) => Promise<void>;
   logout: () => void;
 }
 
@@ -26,8 +26,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       .finally(() => setLoading(false));
   }, []);
 
-  async function applyTokens(tokens: TokenResponse) {
-    setTokens(tokens);
+  async function applyTokens(tokens: TokenResponse, remember: boolean = true) {
+    setTokens(tokens, remember);
     setUser(await getMe());
   }
 

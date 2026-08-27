@@ -24,18 +24,32 @@ export const WS_BASE_URL = API_BASE_URL.replace(/^http/, "ws");
 const ACCESS_TOKEN_KEY = "lanelines.access_token";
 const REFRESH_TOKEN_KEY = "lanelines.refresh_token";
 
+// "Remember me" decides which storage tokens live in: localStorage survives
+// closing the browser (up to the refresh token's lifetime), sessionStorage
+// is cleared when the tab/browser closes. Only one of the two ever holds a
+// live pair at a time, so reads just check both.
 export function getAccessToken(): string | null {
-  return localStorage.getItem(ACCESS_TOKEN_KEY);
+  return localStorage.getItem(ACCESS_TOKEN_KEY) ?? sessionStorage.getItem(ACCESS_TOKEN_KEY);
 }
 
-export function setTokens(tokens: TokenResponse): void {
-  localStorage.setItem(ACCESS_TOKEN_KEY, tokens.access_token);
-  localStorage.setItem(REFRESH_TOKEN_KEY, tokens.refresh_token);
+function getRefreshToken(): string | null {
+  return localStorage.getItem(REFRESH_TOKEN_KEY) ?? sessionStorage.getItem(REFRESH_TOKEN_KEY);
+}
+
+export function setTokens(tokens: TokenResponse, remember: boolean = true): void {
+  const store = remember ? localStorage : sessionStorage;
+  const other = remember ? sessionStorage : localStorage;
+  store.setItem(ACCESS_TOKEN_KEY, tokens.access_token);
+  store.setItem(REFRESH_TOKEN_KEY, tokens.refresh_token);
+  other.removeItem(ACCESS_TOKEN_KEY);
+  other.removeItem(REFRESH_TOKEN_KEY);
 }
 
 export function clearTokens(): void {
   localStorage.removeItem(ACCESS_TOKEN_KEY);
   localStorage.removeItem(REFRESH_TOKEN_KEY);
+  sessionStorage.removeItem(ACCESS_TOKEN_KEY);
+  sessionStorage.removeItem(REFRESH_TOKEN_KEY);
 }
 
 export class ApiError extends Error {
@@ -47,13 +61,54 @@ export class ApiError extends Error {
   }
 }
 
-async function apiFetch<T>(path: string, options: RequestInit = {}): Promise<T> {
+// De-duped so several requests failing at once (e.g. a REST call and a
+// WebSocket reconnect right as the access token expires) trigger one
+// refresh, not a stampede of them.
+let pendingRefresh: Promise<boolean> | null = null;
+
+function refreshAccessTokenOnce(): Promise<boolean> {
+  if (!pendingRefresh) {
+    pendingRefresh = refreshAccessToken().finally(() => {
+      pendingRefresh = null;
+    });
+  }
+  return pendingRefresh;
+}
+
+async function refreshAccessToken(): Promise<boolean> {
+  const refreshToken = getRefreshToken();
+  if (!refreshToken) return false;
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/v1/auth/refresh`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ refresh_token: refreshToken }),
+    });
+    if (!response.ok) return false;
+    const tokens = (await response.json()) as TokenResponse;
+    const remember = localStorage.getItem(REFRESH_TOKEN_KEY) !== null;
+    setTokens(tokens, remember);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+async function apiFetch<T>(path: string, options: RequestInit = {}, isRetry = false): Promise<T> {
   const token = getAccessToken();
   const headers = new Headers(options.headers);
   headers.set("Content-Type", "application/json");
   if (token) headers.set("Authorization", `Bearer ${token}`);
 
   const response = await fetch(`${API_BASE_URL}${path}`, { ...options, headers });
+
+  if (response.status === 401 && token && !isRetry && path !== "/api/v1/auth/refresh") {
+    if (await refreshAccessTokenOnce()) {
+      return apiFetch<T>(path, options, true);
+    }
+    clearTokens();
+  }
+
   if (!response.ok) {
     let detail = response.statusText;
     try {

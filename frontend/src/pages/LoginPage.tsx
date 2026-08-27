@@ -8,6 +8,7 @@ export function LoginPage() {
   const navigate = useNavigate();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [rememberMe, setRememberMe] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
@@ -17,7 +18,7 @@ export function LoginPage() {
     setSubmitting(true);
     try {
       const tokens = await apiLogin(email, password);
-      await applyTokens(tokens);
+      await applyTokens(tokens, rememberMe);
       navigate("/markets");
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "Login failed");
@@ -37,6 +38,10 @@ export function LoginPage() {
         <label>
           Password
           <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} required />
+        </label>
+        <label className="checkbox-row">
+          <input type="checkbox" checked={rememberMe} onChange={(e) => setRememberMe(e.target.checked)} />
+          Remember me
         </label>
         {error && <p className="error">{error}</p>}
         <button type="submit" disabled={submitting}>
