@@ -135,7 +135,7 @@ export interface SwimmerOut {
   id: string;
   team_id: string;
   name: string;
-  class_year: number | null;
+  class_standing: string | null;
 }
 
 export interface InviteCheckOut {

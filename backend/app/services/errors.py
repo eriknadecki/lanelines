@@ -28,3 +28,8 @@ class NotFoundError(ServiceError):
 
 class AlreadyResolvedError(ServiceError):
     pass
+
+
+class DeletionBlockedError(ServiceError):
+    """Raised when deleting something would orphan real activity (trades,
+    payouts) or another record that still references it."""

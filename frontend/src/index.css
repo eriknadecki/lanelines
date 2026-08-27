@@ -317,6 +317,20 @@ th {
   margin-bottom: 16px;
 }
 
+.admin-nav {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 20px;
+  font-weight: 600;
+  color: var(--text);
+}
+.admin-nav select {
+  font-weight: normal;
+  padding: 6px 10px;
+  min-width: 220px;
+}
+
 .checkbox-list {
   display: flex;
   flex-wrap: wrap;
@@ -335,6 +349,40 @@ th {
   color: var(--text);
   font-size: 14px;
   max-width: none;
+}
+
+.entity-list {
+  list-style: none;
+  margin: 12px 0 0;
+  padding: 0;
+}
+.entity-list li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 0;
+  border-bottom: 1px solid var(--border);
+  color: var(--text);
+  font-size: 14px;
+}
+.delete-control {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.delete-button {
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 2px 8px;
+  font-size: 12px;
+  cursor: pointer;
+  color: #c0392b;
+}
+.delete-button:hover {
+  background: #c0392b;
+  color: white;
 }
 
 .ticker-feed li {

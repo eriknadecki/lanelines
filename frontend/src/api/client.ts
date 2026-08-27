@@ -141,11 +141,44 @@ export interface CreateTeamRequest {
 export const createTeam = (payload: CreateTeamRequest) =>
   apiFetch<TeamOut>("/api/v1/admin/teams", { method: "POST", body: JSON.stringify(payload) });
 
-export const createSwimmer = (teamId: string, name: string, class_year: number | null) =>
+export const createSwimmer = (teamId: string, name: string, class_standing: string | null) =>
   apiFetch<SwimmerOut>(`/api/v1/admin/teams/${teamId}/swimmers`, {
     method: "POST",
-    body: JSON.stringify({ name, class_year }),
+    body: JSON.stringify({ name, class_standing }),
   });
+
+export const deleteSwimmer = (teamId: string, swimmerId: string) =>
+  apiFetch<void>(`/api/v1/admin/teams/${teamId}/swimmers/${swimmerId}`, { method: "DELETE" });
+
+export async function uploadRosterCsv(teamId: string, file: File): Promise<SwimmerOut[]> {
+  const token = getAccessToken();
+  const headers = new Headers();
+  if (token) headers.set("Authorization", `Bearer ${token}`);
+
+  const formData = new FormData();
+  formData.append("file", file);
+
+  const response = await fetch(`${API_BASE_URL}/api/v1/admin/teams/${teamId}/swimmers/upload-csv`, {
+    method: "POST",
+    headers,
+    body: formData,
+  });
+  if (!response.ok) {
+    let detail = response.statusText;
+    try {
+      const body = await response.json();
+      detail = body.detail ?? detail;
+    } catch {
+      // response had no JSON body
+    }
+    throw new ApiError(response.status, detail);
+  }
+  return (await response.json()) as SwimmerOut[];
+}
+
+export const deleteVenue = (venueId: string) => apiFetch<void>(`/api/v1/admin/venues/${venueId}`, { method: "DELETE" });
+
+export const deleteTeam = (teamId: string) => apiFetch<void>(`/api/v1/admin/teams/${teamId}`, { method: "DELETE" });
 
 export interface CreateMeetRequest {
   name: string;
@@ -159,11 +192,16 @@ export interface CreateMeetRequest {
 export const createMeet = (payload: CreateMeetRequest) =>
   apiFetch<MeetOut>("/api/v1/admin/meets", { method: "POST", body: JSON.stringify(payload) });
 
+export const deleteMeet = (meetId: string) => apiFetch<void>(`/api/v1/admin/meets/${meetId}`, { method: "DELETE" });
+
 export const createMeetEvent = (meetId: string, name: string, event_order: number) =>
   apiFetch<MeetEventOut>(`/api/v1/admin/meets/${meetId}/events`, {
     method: "POST",
     body: JSON.stringify({ name, event_order }),
   });
+
+export const deleteMeetEvent = (meetId: string, eventId: string) =>
+  apiFetch<void>(`/api/v1/admin/meets/${meetId}/events/${eventId}`, { method: "DELETE" });
 
 export const postTickerUpdate = (meetId: string, body: string, meet_event_id?: string | null) =>
   apiFetch<TickerUpdateOut>(`/api/v1/admin/meets/${meetId}/ticker`, {
@@ -182,6 +220,9 @@ export interface CreateMarketGroupRequest {
 
 export const createMarketGroup = (payload: CreateMarketGroupRequest) =>
   apiFetch<MarketGroupOut>("/api/v1/admin/market-groups", { method: "POST", body: JSON.stringify(payload) });
+
+export const deleteMarketGroup = (groupId: string) =>
+  apiFetch<void>(`/api/v1/admin/market-groups/${groupId}`, { method: "DELETE" });
 
 export const closeMarket = (marketId: string) =>
   apiFetch<MarketOut>(`/api/v1/admin/markets/${marketId}/close`, { method: "POST" });

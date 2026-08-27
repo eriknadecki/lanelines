@@ -70,13 +70,13 @@ def test_add_swimmer_to_roster_and_list_it(client, db_session):
 
     resp = client.post(
         f"/api/v1/admin/teams/{team['id']}/swimmers",
-        json={"name": "Alex Smith", "class_year": 2027},
+        json={"name": "Alex Smith", "class_standing": "SR"},
         headers=headers,
     )
     assert resp.status_code == 201
     swimmer = resp.json()
     assert swimmer["team_id"] == team["id"]
-    assert swimmer["class_year"] == 2027
+    assert swimmer["class_standing"] == "SR"
 
     roster = client.get(f"/api/v1/teams/{team['id']}/swimmers").json()
     assert [s["name"] for s in roster] == ["Alex Smith"]

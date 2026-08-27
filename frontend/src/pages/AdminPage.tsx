@@ -9,15 +9,32 @@ import {
   createSwimmer,
   createTeam,
   createVenue,
+  deleteMarketGroup,
+  deleteMeet,
+  deleteMeetEvent,
+  deleteSwimmer,
+  deleteTeam,
+  deleteVenue,
   listMarketGroups,
   listMeetEvents,
   listMeets,
+  listSwimmers,
   listTeams,
   listVenues,
   postTickerUpdate,
   resolveMarketGroup,
+  uploadRosterCsv,
 } from "../api/client";
-import type { CourseType, MarketGroupOut, MeetEventOut, MeetOut, MeetType, TeamOut, VenueOut } from "../api/types";
+import type {
+  CourseType,
+  MarketGroupOut,
+  MeetEventOut,
+  MeetOut,
+  MeetType,
+  SwimmerOut,
+  TeamOut,
+  VenueOut,
+} from "../api/types";
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
@@ -34,7 +51,49 @@ function ResultLine({ result, error }: { result: string | null; error: string | 
   return null;
 }
 
+// Deletion is guarded server-side (a 409 means something still references
+// this row), so on failure we just surface the backend's explanation rather
+// than trying to predict which rows are deletable client-side.
+function DeleteButton({ onDelete, onDeleted }: { onDelete: () => Promise<void>; onDeleted: () => void }) {
+  const [error, setError] = useState<string | null>(null);
+
+  async function handleClick() {
+    setError(null);
+    try {
+      await onDelete();
+      onDeleted();
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : "Failed to delete");
+    }
+  }
+
+  return (
+    <span className="delete-control">
+      <button type="button" className="delete-button" onClick={handleClick}>
+        Delete
+      </button>
+      {error && <span className="error"> {error}</span>}
+    </span>
+  );
+}
+
+const ADMIN_SECTIONS = [
+  { id: "invites", label: "Invites" },
+  { id: "venues", label: "Venues" },
+  { id: "teams", label: "Teams" },
+  { id: "roster", label: "Roster" },
+  { id: "meets", label: "Meets" },
+  { id: "meet-events", label: "Meet events" },
+  { id: "outcomes", label: "Outcomes (markets)" },
+  { id: "ticker", label: "Ticker updates" },
+  { id: "close-market", label: "Close market" },
+  { id: "resolve", label: "Resolve outcome" },
+] as const;
+
+type AdminSectionId = (typeof ADMIN_SECTIONS)[number]["id"];
+
 export function AdminPage() {
+  const [activeSection, setActiveSection] = useState<AdminSectionId>("venues");
   const [venues, setVenues] = useState<VenueOut[]>([]);
   const [teams, setTeams] = useState<TeamOut[]>([]);
   const [meets, setMeets] = useState<MeetOut[]>([]);
@@ -55,16 +114,41 @@ export function AdminPage() {
   return (
     <div>
       <h1>Admin</h1>
-      <InviteSection />
-      <VenueSection onCreated={refreshVenues} />
-      <TeamSection venues={venues} onCreated={refreshTeams} />
-      <SwimmerSection teams={teams} />
-      <MeetSection teams={teams} venues={venues} onCreated={refreshMeets} />
-      <MeetEventSection meets={meets} />
-      <MarketGroupSection teams={teams} meets={meets} onCreated={refreshGroups} />
-      <TickerSection meets={meets} />
-      <CloseMarketSection groups={groups} onChanged={refreshGroups} />
-      <ResolveSection groups={groups} onResolved={refreshGroups} />
+      <label className="admin-nav">
+        Viewing
+        <select value={activeSection} onChange={(e) => setActiveSection(e.target.value as AdminSectionId)}>
+          {ADMIN_SECTIONS.map((s) => (
+            <option key={s.id} value={s.id}>
+              {s.label}
+            </option>
+          ))}
+        </select>
+      </label>
+
+      {activeSection === "invites" && <InviteSection />}
+      {activeSection === "venues" && (
+        <VenueSection venues={venues} onCreated={refreshVenues} onDeleted={refreshVenues} />
+      )}
+      {activeSection === "teams" && (
+        <TeamSection teams={teams} venues={venues} onCreated={refreshTeams} onDeleted={refreshTeams} />
+      )}
+      {activeSection === "roster" && <SwimmerSection teams={teams} />}
+      {activeSection === "meets" && (
+        <MeetSection meets={meets} teams={teams} venues={venues} onCreated={refreshMeets} onDeleted={refreshMeets} />
+      )}
+      {activeSection === "meet-events" && <MeetEventSection meets={meets} />}
+      {activeSection === "outcomes" && (
+        <MarketGroupSection
+          teams={teams}
+          meets={meets}
+          groups={groups}
+          onCreated={refreshGroups}
+          onDeleted={refreshGroups}
+        />
+      )}
+      {activeSection === "ticker" && <TickerSection meets={meets} />}
+      {activeSection === "close-market" && <CloseMarketSection groups={groups} onChanged={refreshGroups} />}
+      {activeSection === "resolve" && <ResolveSection groups={groups} onResolved={refreshGroups} />}
     </div>
   );
 }
@@ -99,7 +183,15 @@ function InviteSection() {
   );
 }
 
-function VenueSection({ onCreated }: { onCreated: () => void }) {
+function VenueSection({
+  venues,
+  onCreated,
+  onDeleted,
+}: {
+  venues: VenueOut[];
+  onCreated: () => void;
+  onDeleted: () => void;
+}) {
   const [name, setName] = useState("");
   const [address, setAddress] = useState("");
   const [courseType, setCourseType] = useState<CourseType | "">("");
@@ -143,11 +235,30 @@ function VenueSection({ onCreated }: { onCreated: () => void }) {
         <button type="submit">Create venue</button>
       </form>
       <ResultLine result={result} error={error} />
+      <ul className="entity-list">
+        {venues.map((v) => (
+          <li key={v.id}>
+            {v.name}
+            {v.address ? ` — ${v.address}` : ""}
+            <DeleteButton onDelete={() => deleteVenue(v.id)} onDeleted={onDeleted} />
+          </li>
+        ))}
+      </ul>
     </Section>
   );
 }
 
-function TeamSection({ venues, onCreated }: { venues: VenueOut[]; onCreated: () => void }) {
+function TeamSection({
+  teams,
+  venues,
+  onCreated,
+  onDeleted,
+}: {
+  teams: TeamOut[];
+  venues: VenueOut[];
+  onCreated: () => void;
+  onDeleted: () => void;
+}) {
   const [name, setName] = useState("");
   const [shortName, setShortName] = useState("");
   const [location, setLocation] = useState("");
@@ -205,6 +316,14 @@ function TeamSection({ venues, onCreated }: { venues: VenueOut[]; onCreated: () 
         <button type="submit">Create team</button>
       </form>
       <ResultLine result={result} error={error} />
+      <ul className="entity-list">
+        {teams.map((t) => (
+          <li key={t.id}>
+            {t.name} ({t.short_name})
+            <DeleteButton onDelete={() => deleteTeam(t.id)} onDeleted={onDeleted} />
+          </li>
+        ))}
+      </ul>
     </Section>
   );
 }
@@ -212,64 +331,120 @@ function TeamSection({ venues, onCreated }: { venues: VenueOut[]; onCreated: () 
 function SwimmerSection({ teams }: { teams: TeamOut[] }) {
   const [teamId, setTeamId] = useState("");
   const [name, setName] = useState("");
-  const [classYear, setClassYear] = useState("");
+  const [classStanding, setClassStanding] = useState("");
+  const [csvFile, setCsvFile] = useState<File | null>(null);
+  const [roster, setRoster] = useState<SwimmerOut[]>([]);
   const [result, setResult] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+
+  const refreshRoster = () => {
+    if (!teamId) {
+      setRoster([]);
+      return;
+    }
+    listSwimmers(teamId).then(setRoster).catch(() => setRoster([]));
+  };
+
+  useEffect(refreshRoster, [teamId]);
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
     setError(null);
     try {
-      const swimmer = await createSwimmer(teamId, name, classYear ? Number(classYear) : null);
+      const swimmer = await createSwimmer(teamId, name, classStanding || null);
       setResult(`Added "${swimmer.name}" to the roster`);
       setName("");
-      setClassYear("");
+      setClassStanding("");
+      refreshRoster();
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : "Failed");
+    }
+  }
+
+  async function handleCsvUpload(e: FormEvent) {
+    e.preventDefault();
+    setError(null);
+    if (!csvFile) return;
+    try {
+      const added = await uploadRosterCsv(teamId, csvFile);
+      setResult(`Added ${added.length} swimmer(s) from CSV`);
+      setCsvFile(null);
+      refreshRoster();
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "Failed");
     }
   }
 
   return (
-    <Section title="Add swimmer to roster">
-      <form onSubmit={handleSubmit}>
-        <label>
-          Team
-          <select value={teamId} onChange={(e) => setTeamId(e.target.value)} required>
-            <option value="" disabled>
-              Select a team
+    <Section title="Roster">
+      <label>
+        Team
+        <select value={teamId} onChange={(e) => setTeamId(e.target.value)} required>
+          <option value="" disabled>
+            Select a team
+          </option>
+          {teams.map((t) => (
+            <option key={t.id} value={t.id}>
+              {t.name}
             </option>
-            {teams.map((t) => (
-              <option key={t.id} value={t.id}>
-                {t.name}
-              </option>
-            ))}
-          </select>
-        </label>
+          ))}
+        </select>
+      </label>
+
+      <form onSubmit={handleSubmit}>
         <label>
           Name
           <input value={name} onChange={(e) => setName(e.target.value)} required placeholder="Alex Smith" />
         </label>
         <label>
-          Class year (optional)
-          <input type="number" value={classYear} onChange={(e) => setClassYear(e.target.value)} placeholder="2027" />
+          Class (optional)
+          <input value={classStanding} onChange={(e) => setClassStanding(e.target.value)} placeholder="FR" />
         </label>
         <button type="submit" disabled={!teamId}>
           Add swimmer
         </button>
       </form>
+
+      <form onSubmit={handleCsvUpload}>
+        <label>
+          Upload roster CSV (column 1: name, column 2: class — e.g. FR/SO/JR/SR)
+          <input
+            type="file"
+            accept=".csv,text/csv"
+            onChange={(e) => setCsvFile(e.target.files?.[0] ?? null)}
+          />
+        </label>
+        <button type="submit" disabled={!teamId || !csvFile}>
+          Upload CSV
+        </button>
+      </form>
       <ResultLine result={result} error={error} />
+
+      <ul className="entity-list">
+        {roster.map((s) => (
+          <li key={s.id}>
+            {s.name}
+            {s.class_standing ? ` (${s.class_standing})` : ""}
+            <DeleteButton onDelete={() => deleteSwimmer(teamId, s.id)} onDeleted={refreshRoster} />
+          </li>
+        ))}
+      </ul>
     </Section>
   );
 }
 
 function MeetSection({
+  meets,
   teams,
   venues,
   onCreated,
+  onDeleted,
 }: {
+  meets: MeetOut[];
   teams: TeamOut[];
   venues: VenueOut[];
   onCreated: () => void;
+  onDeleted: () => void;
 }) {
   const [name, setName] = useState("");
   const [meetType, setMeetType] = useState<MeetType>("dual");
@@ -381,6 +556,14 @@ function MeetSection({
         <button type="submit">Create meet</button>
       </form>
       <ResultLine result={result} error={error} />
+      <ul className="entity-list">
+        {meets.map((m) => (
+          <li key={m.id}>
+            {m.name} ({m.meet_type})
+            <DeleteButton onDelete={() => deleteMeet(m.id)} onDeleted={onDeleted} />
+          </li>
+        ))}
+      </ul>
     </Section>
   );
 }
@@ -389,8 +572,19 @@ function MeetEventSection({ meets }: { meets: MeetOut[] }) {
   const [meetId, setMeetId] = useState("");
   const [name, setName] = useState("");
   const [eventOrder, setEventOrder] = useState("0");
+  const [events, setEvents] = useState<MeetEventOut[]>([]);
   const [result, setResult] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+
+  const refreshEvents = () => {
+    if (!meetId) {
+      setEvents([]);
+      return;
+    }
+    listMeetEvents(meetId).then(setEvents).catch(() => setEvents([]));
+  };
+
+  useEffect(refreshEvents, [meetId]);
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
@@ -399,6 +593,7 @@ function MeetEventSection({ meets }: { meets: MeetOut[] }) {
       const event = await createMeetEvent(meetId, name, Number(eventOrder));
       setResult(`Added event "${event.name}"`);
       setName("");
+      refreshEvents();
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "Failed");
     }
@@ -433,6 +628,14 @@ function MeetEventSection({ meets }: { meets: MeetOut[] }) {
         </button>
       </form>
       <ResultLine result={result} error={error} />
+      <ul className="entity-list">
+        {events.map((ev) => (
+          <li key={ev.id}>
+            {ev.name}
+            <DeleteButton onDelete={() => deleteMeetEvent(meetId, ev.id)} onDeleted={refreshEvents} />
+          </li>
+        ))}
+      </ul>
     </Section>
   );
 }
@@ -440,11 +643,15 @@ function MeetEventSection({ meets }: { meets: MeetOut[] }) {
 function MarketGroupSection({
   teams,
   meets,
+  groups,
   onCreated,
+  onDeleted,
 }: {
   teams: TeamOut[];
   meets: MeetOut[];
+  groups: MarketGroupOut[];
   onCreated: () => void;
+  onDeleted: () => void;
 }) {
   const [title, setTitle] = useState("");
   const [teamIds, setTeamIds] = useState<string[]>([]);
@@ -533,6 +740,16 @@ function MarketGroupSection({
         </button>
       </form>
       <ResultLine result={result} error={error} />
+      <ul className="entity-list">
+        {groups.map((g) => (
+          <li key={g.id}>
+            {g.title} ({g.status})
+            {g.status !== "resolved" && (
+              <DeleteButton onDelete={() => deleteMarketGroup(g.id)} onDeleted={onDeleted} />
+            )}
+          </li>
+        ))}
+      </ul>
     </Section>
   );
 }

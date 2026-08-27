@@ -1,6 +1,6 @@
 import uuid
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, File, HTTPException, UploadFile, status
 from sqlalchemy.orm import Session
 
 from app.core.deps import get_engine, require_admin
@@ -43,10 +43,23 @@ from app.services import (
     ticker_service,
     venue_service,
 )
-from app.services.errors import AlreadyResolvedError, NotFoundError, ServiceError
+from app.services.errors import (
+    AlreadyResolvedError,
+    DeletionBlockedError,
+    NotFoundError,
+    ServiceError,
+)
 from engine.engine import MatchingEngine
 
 router = APIRouter(prefix="/admin", tags=["admin"])
+
+
+def _to_http_error(exc: ServiceError) -> HTTPException:
+    if isinstance(exc, NotFoundError):
+        return HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc))
+    if isinstance(exc, (DeletionBlockedError, AlreadyResolvedError)):
+        return HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(exc))
+    return HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc))
 
 
 @router.post("/invites", response_model=InviteOut)
@@ -78,6 +91,18 @@ def create_venue(
     return venue_service.create_venue(db, name=payload.name, address=payload.address, course_type=payload.course_type)
 
 
+@router.delete("/venues/{venue_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_venue(
+    venue_id: uuid.UUID,
+    db: Session = Depends(get_db),
+    admin: User = Depends(require_admin),
+) -> None:
+    try:
+        venue_service.delete_venue(db, venue_id)
+    except ServiceError as exc:
+        raise _to_http_error(exc) from exc
+
+
 @router.post("/teams", response_model=TeamOut, status_code=status.HTTP_201_CREATED)
 def create_team(
     payload: CreateTeamRequest,
@@ -93,6 +118,18 @@ def create_team(
     )
 
 
+@router.delete("/teams/{team_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_team(
+    team_id: uuid.UUID,
+    db: Session = Depends(get_db),
+    admin: User = Depends(require_admin),
+) -> None:
+    try:
+        meet_service.delete_team(db, team_id)
+    except ServiceError as exc:
+        raise _to_http_error(exc) from exc
+
+
 @router.post("/teams/{team_id}/swimmers", response_model=SwimmerOut, status_code=status.HTTP_201_CREATED)
 def create_swimmer(
     team_id: uuid.UUID,
@@ -100,7 +137,35 @@ def create_swimmer(
     db: Session = Depends(get_db),
     admin: User = Depends(require_admin),
 ) -> Swimmer:
-    return swimmer_service.create_swimmer(db, team_id=team_id, name=payload.name, class_year=payload.class_year)
+    return swimmer_service.create_swimmer(
+        db, team_id=team_id, name=payload.name, class_standing=payload.class_standing
+    )
+
+
+@router.post(
+    "/teams/{team_id}/swimmers/upload-csv", response_model=list[SwimmerOut], status_code=status.HTTP_201_CREATED
+)
+async def upload_roster_csv(
+    team_id: uuid.UUID,
+    file: UploadFile = File(...),
+    db: Session = Depends(get_db),
+    admin: User = Depends(require_admin),
+) -> list[Swimmer]:
+    csv_bytes = await file.read()
+    return swimmer_service.bulk_create_swimmers_from_csv(db, team_id=team_id, csv_bytes=csv_bytes)
+
+
+@router.delete("/teams/{team_id}/swimmers/{swimmer_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_swimmer(
+    team_id: uuid.UUID,
+    swimmer_id: uuid.UUID,
+    db: Session = Depends(get_db),
+    admin: User = Depends(require_admin),
+) -> None:
+    try:
+        swimmer_service.delete_swimmer(db, swimmer_id)
+    except ServiceError as exc:
+        raise _to_http_error(exc) from exc
 
 
 @router.post("/meets", response_model=MeetOut, status_code=status.HTTP_201_CREATED)
@@ -120,6 +185,18 @@ def create_meet(
     )
 
 
+@router.delete("/meets/{meet_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_meet(
+    meet_id: uuid.UUID,
+    db: Session = Depends(get_db),
+    admin: User = Depends(require_admin),
+) -> None:
+    try:
+        meet_service.delete_meet(db, meet_id)
+    except ServiceError as exc:
+        raise _to_http_error(exc) from exc
+
+
 @router.post("/meets/{meet_id}/events", response_model=MeetEventOut, status_code=status.HTTP_201_CREATED)
 def create_meet_event(
     meet_id: uuid.UUID,
@@ -134,6 +211,19 @@ def create_meet_event(
         event_order=payload.event_order,
         scheduled_at=payload.scheduled_at,
     )
+
+
+@router.delete("/meets/{meet_id}/events/{event_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_meet_event(
+    meet_id: uuid.UUID,
+    event_id: uuid.UUID,
+    db: Session = Depends(get_db),
+    admin: User = Depends(require_admin),
+) -> None:
+    try:
+        meet_service.delete_meet_event(db, event_id)
+    except ServiceError as exc:
+        raise _to_http_error(exc) from exc
 
 
 @router.post("/meets/{meet_id}/ticker", response_model=TickerUpdateOut, status_code=status.HTTP_201_CREATED)
@@ -166,6 +256,19 @@ def create_market_group(
         )
     except NotFoundError as exc:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
+
+
+@router.delete("/market-groups/{group_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_market_group(
+    group_id: uuid.UUID,
+    db: Session = Depends(get_db),
+    admin: User = Depends(require_admin),
+    engine: MatchingEngine = Depends(get_engine),
+) -> None:
+    try:
+        market_service.delete_market_group(db, engine, group_id)
+    except ServiceError as exc:
+        raise _to_http_error(exc) from exc
 
 
 @router.post("/markets/{market_id}/close", response_model=MarketOut)

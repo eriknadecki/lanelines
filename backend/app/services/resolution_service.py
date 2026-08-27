@@ -11,16 +11,15 @@ from app.db.models import (
     MarketGroupStatus,
     MarketOutcome,
     MarketStatus,
-    Order,
     Position,
 )
 from app.services import ledger_service
 from app.services.account_service import get_user_account
 from app.services.errors import AlreadyResolvedError, NotFoundError
 from app.services.ledger_service import LedgerEntryInput
+from app.services.order_cancellation import cancel_open_orders
 from app.ws import events as ws_events
 from engine.engine import MatchingEngine
-from engine.types import OrderStatus
 
 
 def resolve_market_group(
@@ -42,7 +41,7 @@ def resolve_market_group(
 
     now = datetime.now(UTC)
     for market in markets:
-        _cancel_open_orders(db, engine, market)
+        cancel_open_orders(db, engine, market)
 
         market.status = MarketStatus.resolved
         market.resolved_outcome = MarketOutcome.yes if market.id == winning_market_id else MarketOutcome.no
@@ -58,23 +57,6 @@ def resolve_market_group(
         ws_events.publish_market_resolved(market.id, group.id, winning_market_id, market.resolved_outcome.value)
 
     return group
-
-
-def _cancel_open_orders(db: Session, engine: MatchingEngine, market: Market) -> None:
-    open_orders = list(
-        db.execute(
-            select(Order)
-            .where(Order.market_id == market.id, Order.status.in_([OrderStatus.open, OrderStatus.partially_filled]))
-            .with_for_update()
-        ).scalars()
-    )
-    for order in open_orders:
-        result = engine.cancel_order(str(market.id), order.id)
-        if result.status == OrderStatus.cancelled:
-            account = get_user_account(db, order.user_id)
-            account.held_collateral_cents -= order.collateral_cents
-            order.collateral_cents = 0
-            order.status = OrderStatus.cancelled
 
 
 def _pay_out_positions(db: Session, market: Market) -> None:
