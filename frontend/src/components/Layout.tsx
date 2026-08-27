@@ -28,7 +28,7 @@ export function Layout() {
     <div className="app-shell">
       <header className="topbar">
         <Link to="/markets" className="brand">
-          Ivy Swim Exchange
+          Lanelines
         </Link>
         <nav>
           <Link to="/markets">Markets</Link>

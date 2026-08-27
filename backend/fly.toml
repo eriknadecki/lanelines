@@ -1,4 +1,4 @@
-app = "ivy-swim-exchange-api"
+app = "lanelines-api"
 primary_region = "iad"
 
 [build]

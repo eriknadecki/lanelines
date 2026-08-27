@@ -1,7 +1,7 @@
 [project]
-name = "ivy-swim-exchange"
+name = "lanelines"
 version = "0.1.0"
-description = "Kalshi-style prediction market for Ivy League swimming"
+description = "Kalshi-style prediction market for college swimming"
 requires-python = ">=3.12"
 dependencies = [
     "fastapi>=0.115",

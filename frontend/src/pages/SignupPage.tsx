@@ -44,7 +44,7 @@ export function SignupPage() {
 
   return (
     <div className="auth-card">
-      <h1>Join Ivy Swim Exchange</h1>
+      <h1>Join Lanelines</h1>
       <form onSubmit={handleSubmit}>
         <label>
           Invite code

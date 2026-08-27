@@ -1,8 +1,10 @@
-# Ivy Swim Exchange
+# Lanelines
 
-Kalshi-style prediction market for Ivy League swimming — order-book trading with
-virtual currency on markets like "Will Princeton beat Harvard?" or "Who wins the
-Ivy League Championship?", fed by manual live meet updates during the season.
+Kalshi-style prediction market for college swimming — order-book trading with
+virtual currency on markets like "Will Princeton beat Harvard?" or "Who wins
+the NCAA Championship?", fed by manual live meet updates during the season.
+Teams and meets are entered through the admin panel, so it covers any
+program — not tied to a single conference.
 
 See `backend/` for the FastAPI + matching engine service and `frontend/` for the
 React + TypeScript trading UI.

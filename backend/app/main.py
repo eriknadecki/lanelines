@@ -16,7 +16,7 @@ async def lifespan(app: FastAPI):
     yield
 
 
-app = FastAPI(title="Ivy Swim Exchange", lifespan=lifespan)
+app = FastAPI(title="Lanelines", lifespan=lifespan)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.cors_allow_origins,

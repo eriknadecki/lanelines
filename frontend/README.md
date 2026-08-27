@@ -1,4 +1,4 @@
-# Ivy Swim Exchange — frontend
+# Lanelines — frontend
 
 React + TypeScript + Vite trading UI for the backend in `../backend`. See the
 root [README](../README.md) for full setup (Postgres, backend, invite codes).
