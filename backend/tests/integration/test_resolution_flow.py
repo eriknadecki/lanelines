@@ -33,6 +33,16 @@ def _signup(client, db_session, admin: User, email: str, username: str) -> dict:
     return {"Authorization": f"Bearer {resp.json()['access_token']}"}
 
 
+def _create_team(client, admin_headers: dict, name: str) -> str:
+    resp = client.post(
+        "/api/v1/admin/teams",
+        json={"name": name, "short_name": name[:20]},
+        headers=admin_headers,
+    )
+    assert resp.status_code == 201
+    return resp.json()["id"]
+
+
 def _place_order(client, headers, market_id, action, price_cents, quantity):
     resp = client.post(
         "/api/v1/orders",
@@ -64,9 +74,10 @@ def test_full_lifecycle_trade_ticker_resolve_payout(client, db_session):
     assert meet_resp.status_code == 201
     meet_id = meet_resp.json()["id"]
 
+    princeton_id = _create_team(client, admin_headers, "Princeton")
     group_resp = client.post(
         "/api/v1/admin/market-groups",
-        json={"title": "Who wins the meet?", "outcomes": ["Princeton wins"], "meet_id": meet_id},
+        json={"title": "Who wins the meet?", "team_ids": [princeton_id], "meet_id": meet_id},
         headers=admin_headers,
     )
     assert group_resp.status_code == 201
@@ -130,9 +141,11 @@ def test_full_lifecycle_trade_ticker_resolve_payout(client, db_session):
 def test_resolving_twice_is_rejected(client, db_session):
     admin = _make_admin(db_session)
     admin_headers = _admin_headers(admin)
+    team_a = _create_team(client, admin_headers, "Team A")
+    team_b = _create_team(client, admin_headers, "Team B")
     group_resp = client.post(
         "/api/v1/admin/market-groups",
-        json={"title": "Test group", "outcomes": ["A", "B"]},
+        json={"title": "Test group", "team_ids": [team_a, team_b]},
         headers=admin_headers,
     )
     group_id = group_resp.json()["id"]
@@ -158,9 +171,10 @@ def test_closed_market_rejects_new_orders(client, db_session):
     admin_headers = _admin_headers(admin)
     alice_headers = _signup(client, db_session, admin, "resalice2@example.com", "resalice2")
 
+    team_id = _create_team(client, admin_headers, "Closeable Team")
     group_resp = client.post(
         "/api/v1/admin/market-groups",
-        json={"title": "Closeable", "outcomes": ["Yes"]},
+        json={"title": "Closeable", "team_ids": [team_id]},
         headers=admin_headers,
     )
     market_id = group_resp.json()["markets"][0]["id"]

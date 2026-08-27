@@ -63,6 +63,10 @@ class Market(Base):
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     market_group_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("market_groups.id"), index=True)
     label: Mapped[str] = mapped_column(String(255))
+    # Nullable: most outcomes are "this team wins," but not every outcome has
+    # to be a team (e.g. a non-team event market), so this stays optional
+    # rather than becoming the required source of truth for the label.
+    team_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), ForeignKey("teams.id"), nullable=True)
     status: Mapped[MarketStatus] = mapped_column(Enum(MarketStatus, name="market_status"), default=MarketStatus.open)
     resolved_outcome: Mapped[MarketOutcome | None] = mapped_column(
         Enum(MarketOutcome, name="market_outcome"), nullable=True

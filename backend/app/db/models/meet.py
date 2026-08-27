@@ -11,6 +11,7 @@ from app.db.session import Base
 
 class MeetType(StrEnum):
     dual = "dual"
+    tri = "tri"
     championship = "championship"
 
 
@@ -36,7 +37,7 @@ class Meet(Base):
     meet_type: Mapped[MeetType] = mapped_column(Enum(MeetType, name="meet_type"))
     scheduled_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     status: Mapped[MeetStatus] = mapped_column(Enum(MeetStatus, name="meet_status"), default=MeetStatus.scheduled)
-    venue: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    venue_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), ForeignKey("venues.id"), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
 

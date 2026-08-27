@@ -4,7 +4,17 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
 from app.core.deps import get_engine, require_admin
-from app.db.models import Market, MarketGroup, Meet, MeetEvent, Team, TickerUpdate, User
+from app.db.models import (
+    Market,
+    MarketGroup,
+    Meet,
+    MeetEvent,
+    Swimmer,
+    Team,
+    TickerUpdate,
+    User,
+    Venue,
+)
 from app.db.session import get_db
 from app.schemas.invite import CreateInviteRequest, InviteOut
 from app.schemas.market import (
@@ -21,13 +31,17 @@ from app.schemas.meet import (
     MeetOut,
     TickerUpdateOut,
 )
+from app.schemas.swimmer import CreateSwimmerRequest, SwimmerOut
 from app.schemas.team import CreateTeamRequest, TeamOut
+from app.schemas.venue import CreateVenueRequest, VenueOut
 from app.services import (
     auth_service,
     market_service,
     meet_service,
     resolution_service,
+    swimmer_service,
     ticker_service,
+    venue_service,
 )
 from app.services.errors import AlreadyResolvedError, NotFoundError, ServiceError
 from engine.engine import MatchingEngine
@@ -55,13 +69,38 @@ def create_invite(
     )
 
 
+@router.post("/venues", response_model=VenueOut, status_code=status.HTTP_201_CREATED)
+def create_venue(
+    payload: CreateVenueRequest,
+    db: Session = Depends(get_db),
+    admin: User = Depends(require_admin),
+) -> Venue:
+    return venue_service.create_venue(db, name=payload.name, address=payload.address, course_type=payload.course_type)
+
+
 @router.post("/teams", response_model=TeamOut, status_code=status.HTTP_201_CREATED)
 def create_team(
     payload: CreateTeamRequest,
     db: Session = Depends(get_db),
     admin: User = Depends(require_admin),
 ) -> Team:
-    return meet_service.create_team(db, name=payload.name, short_name=payload.short_name)
+    return meet_service.create_team(
+        db,
+        name=payload.name,
+        short_name=payload.short_name,
+        location=payload.location,
+        home_venue_id=payload.home_venue_id,
+    )
+
+
+@router.post("/teams/{team_id}/swimmers", response_model=SwimmerOut, status_code=status.HTTP_201_CREATED)
+def create_swimmer(
+    team_id: uuid.UUID,
+    payload: CreateSwimmerRequest,
+    db: Session = Depends(get_db),
+    admin: User = Depends(require_admin),
+) -> Swimmer:
+    return swimmer_service.create_swimmer(db, team_id=team_id, name=payload.name, class_year=payload.class_year)
 
 
 @router.post("/meets", response_model=MeetOut, status_code=status.HTTP_201_CREATED)
@@ -77,7 +116,7 @@ def create_meet(
         home_team_id=payload.home_team_id,
         away_team_id=payload.away_team_id,
         scheduled_at=payload.scheduled_at,
-        venue=payload.venue,
+        venue_id=payload.venue_id,
     )
 
 
@@ -115,15 +154,18 @@ def create_market_group(
     db: Session = Depends(get_db),
     admin: User = Depends(require_admin),
 ) -> MarketGroup:
-    return market_service.create_market_group(
-        db,
-        title=payload.title,
-        description=payload.description,
-        outcomes=payload.outcomes,
-        close_at=payload.close_at,
-        meet_id=payload.meet_id,
-        meet_event_id=payload.meet_event_id,
-    )
+    try:
+        return market_service.create_market_group(
+            db,
+            title=payload.title,
+            description=payload.description,
+            team_ids=payload.team_ids,
+            close_at=payload.close_at,
+            meet_id=payload.meet_id,
+            meet_event_id=payload.meet_event_id,
+        )
+    except NotFoundError as exc:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
 
 
 @router.post("/markets/{market_id}/close", response_model=MarketOut)

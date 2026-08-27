@@ -6,8 +6,15 @@ from sqlalchemy.orm import Session
 from app.db.models import Meet, MeetEvent, MeetType, Team
 
 
-def create_team(db: Session, *, name: str, short_name: str) -> Team:
-    team = Team(name=name, short_name=short_name)
+def create_team(
+    db: Session,
+    *,
+    name: str,
+    short_name: str,
+    location: str | None,
+    home_venue_id: uuid.UUID | None,
+) -> Team:
+    team = Team(name=name, short_name=short_name, location=location, home_venue_id=home_venue_id)
     db.add(team)
     db.commit()
     db.refresh(team)
@@ -22,7 +29,7 @@ def create_meet(
     home_team_id: uuid.UUID | None,
     away_team_id: uuid.UUID | None,
     scheduled_at: datetime | None,
-    venue: str | None,
+    venue_id: uuid.UUID | None,
 ) -> Meet:
     meet = Meet(
         name=name,
@@ -30,7 +37,7 @@ def create_meet(
         home_team_id=home_team_id,
         away_team_id=away_team_id,
         scheduled_at=scheduled_at,
-        venue=venue,
+        venue_id=venue_id,
     )
     db.add(meet)
     db.commit()

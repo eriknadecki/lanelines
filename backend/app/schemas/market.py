@@ -9,7 +9,7 @@ from app.db.models.market import MarketGroupStatus, MarketOutcome, MarketStatus
 class CreateMarketGroupRequest(BaseModel):
     title: str = Field(min_length=1, max_length=255)
     description: str | None = None
-    outcomes: list[str] = Field(min_length=1, max_length=32)
+    team_ids: list[uuid.UUID] = Field(min_length=1, max_length=32)
     close_at: datetime | None = None
     meet_id: uuid.UUID | None = None
     meet_event_id: uuid.UUID | None = None
@@ -22,6 +22,7 @@ class ResolveMarketGroupRequest(BaseModel):
 class MarketOut(BaseModel):
     id: uuid.UUID
     label: str
+    team_id: uuid.UUID | None
     status: MarketStatus
     resolved_outcome: MarketOutcome | None
 

@@ -34,10 +34,21 @@ def _signup(client, db_session, admin: User, email: str, username: str) -> dict:
     return {"Authorization": f"Bearer {resp.json()['access_token']}"}
 
 
+def _create_team(client, admin_headers: dict, name: str) -> str:
+    resp = client.post(
+        "/api/v1/admin/teams",
+        json={"name": name, "short_name": name[:20]},
+        headers=admin_headers,
+    )
+    assert resp.status_code == 201
+    return resp.json()["id"]
+
+
 def _create_binary_market(client, admin_headers: dict) -> str:
+    team_id = _create_team(client, admin_headers, "Princeton")
     resp = client.post(
         "/api/v1/admin/market-groups",
-        json={"title": "Princeton vs Harvard", "outcomes": ["Princeton wins"]},
+        json={"title": "Princeton vs Harvard", "team_ids": [team_id]},
         headers=admin_headers,
     )
     assert resp.status_code == 201

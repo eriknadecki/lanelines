@@ -12,7 +12,7 @@ class CreateMeetRequest(BaseModel):
     home_team_id: uuid.UUID | None = None
     away_team_id: uuid.UUID | None = None
     scheduled_at: datetime | None = None
-    venue: str | None = None
+    venue_id: uuid.UUID | None = None
 
 
 class MeetOut(BaseModel):
@@ -23,7 +23,7 @@ class MeetOut(BaseModel):
     away_team_id: uuid.UUID | None
     scheduled_at: datetime | None
     status: MeetStatus
-    venue: str | None
+    venue_id: uuid.UUID | None
 
     model_config = {"from_attributes": True}
 

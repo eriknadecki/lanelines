@@ -38,9 +38,15 @@ def test_book_update_and_trade_broadcast_over_websocket(db_session, matching_eng
         # (as used elsewhere) never fires lifespan, so broadcast() is a no-op.
         with TestClient(app) as client:
             admin_headers = {"Authorization": f"Bearer {create_access_token(admin.id)}"}
+            team_resp = client.post(
+                "/api/v1/admin/teams",
+                json={"name": "WS Team", "short_name": "WST"},
+                headers=admin_headers,
+            )
+            team_id = team_resp.json()["id"]
             group_resp = client.post(
                 "/api/v1/admin/market-groups",
-                json={"title": "WS Test", "outcomes": ["Yes"]},
+                json={"title": "WS Test", "team_ids": [team_id]},
                 headers=admin_headers,
             )
             market_id = group_resp.json()["markets"][0]["id"]
