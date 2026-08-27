@@ -17,13 +17,13 @@ jobs:
       postgres:
         image: postgres:16-alpine
         env:
-          POSTGRES_USER: ivyswim
-          POSTGRES_PASSWORD: ivyswim
-          POSTGRES_DB: ivyswim
+          POSTGRES_USER: lanelines
+          POSTGRES_PASSWORD: lanelines
+          POSTGRES_DB: lanelines
         ports:
           - 5432:5432
         options: >-
-          --health-cmd "pg_isready -U ivyswim"
+          --health-cmd "pg_isready -U lanelines"
           --health-interval 5s
           --health-timeout 5s
           --health-retries 10
@@ -39,7 +39,7 @@ jobs:
       - run: ruff check .
       - run: alembic upgrade head
         env:
-          DATABASE_URL: postgresql+psycopg://ivyswim:ivyswim@localhost:5432/ivyswim
+          DATABASE_URL: postgresql+psycopg://lanelines:lanelines@localhost:5432/lanelines
       - run: pytest -q
         env:
-          DATABASE_URL: postgresql+psycopg://ivyswim:ivyswim@localhost:5432/ivyswim
+          DATABASE_URL: postgresql+psycopg://lanelines:lanelines@localhost:5432/lanelines

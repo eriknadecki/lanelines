@@ -2,15 +2,15 @@ services:
   postgres:
     image: postgres:16-alpine
     environment:
-      POSTGRES_USER: ivyswim
-      POSTGRES_PASSWORD: ivyswim
-      POSTGRES_DB: ivyswim
+      POSTGRES_USER: lanelines
+      POSTGRES_PASSWORD: lanelines
+      POSTGRES_DB: lanelines
     ports:
       - "5432:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ivyswim"]
+      test: ["CMD-SHELL", "pg_isready -U lanelines"]
       interval: 5s
       timeout: 5s
       retries: 10

@@ -17,8 +17,8 @@ import type {
 export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? "http://127.0.0.1:8000";
 export const WS_BASE_URL = API_BASE_URL.replace(/^http/, "ws");
 
-const ACCESS_TOKEN_KEY = "ivyswim.access_token";
-const REFRESH_TOKEN_KEY = "ivyswim.refresh_token";
+const ACCESS_TOKEN_KEY = "lanelines.access_token";
+const REFRESH_TOKEN_KEY = "lanelines.refresh_token";
 
 export function getAccessToken(): string | null {
   return localStorage.getItem(ACCESS_TOKEN_KEY);

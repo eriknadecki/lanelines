@@ -10,7 +10,7 @@ from app.db.session import Base, get_db
 from app.main import app
 from engine.engine import MatchingEngine
 
-_TEST_DATABASE_URL = settings.database_url.rsplit("/", 1)[0] + "/ivyswim_test"
+_TEST_DATABASE_URL = settings.database_url.rsplit("/", 1)[0] + "/lanelines_test"
 _TABLES_IN_FK_ORDER = [
     "trades",
     "orders",
@@ -35,11 +35,11 @@ def _recreate_test_database() -> None:
         conn.execute(
             text(
                 "SELECT pg_terminate_backend(pid) FROM pg_stat_activity "
-                "WHERE datname = 'ivyswim_test' AND pid != pg_backend_pid()"
+                "WHERE datname = 'lanelines_test' AND pid != pg_backend_pid()"
             )
         )
-        conn.execute(text("DROP DATABASE IF EXISTS ivyswim_test"))
-        conn.execute(text("CREATE DATABASE ivyswim_test"))
+        conn.execute(text("DROP DATABASE IF EXISTS lanelines_test"))
+        conn.execute(text("CREATE DATABASE lanelines_test"))
     admin_engine.dispose()
 
 
