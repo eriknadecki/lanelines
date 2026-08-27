@@ -1,17 +1,21 @@
 import type {
   BalanceOut,
   BookSnapshotOut,
+  CourseType,
   InviteCheckOut,
   InviteOut,
   MarketGroupOut,
   MarketOut,
+  MeetEventOut,
   MeetOut,
   OrderOut,
   PositionOut,
+  SwimmerOut,
   TeamOut,
   TickerUpdateOut,
   TokenResponse,
   UserOut,
+  VenueOut,
 } from "./types";
 
 export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? "http://127.0.0.1:8000";
@@ -105,30 +109,61 @@ export const cancelOrder = (orderId: string) => apiFetch<OrderOut>(`/api/v1/orde
 export const listMyOrders = (marketId?: string) =>
   apiFetch<OrderOut[]>(`/api/v1/orders${marketId ? `?market_id=${marketId}` : ""}`);
 
-// --- meets ---
+// --- venues / teams / swimmers / meets (public reads) ---
+export const listVenues = () => apiFetch<VenueOut[]>("/api/v1/venues");
 export const listTeams = () => apiFetch<TeamOut[]>("/api/v1/teams");
+export const listSwimmers = (teamId: string) => apiFetch<SwimmerOut[]>(`/api/v1/teams/${teamId}/swimmers`);
 export const listMeets = () => apiFetch<MeetOut[]>("/api/v1/meets");
 export const getMeet = (meetId: string) => apiFetch<MeetOut>(`/api/v1/meets/${meetId}`);
+export const listMeetEvents = (meetId: string) => apiFetch<MeetEventOut[]>(`/api/v1/meets/${meetId}/events`);
 export const getMeetTicker = (meetId: string) => apiFetch<TickerUpdateOut[]>(`/api/v1/meets/${meetId}/ticker`);
 
 // --- admin ---
 export const createInvite = (max_uses: number, expires_in_days: number | null) =>
   apiFetch<InviteOut>("/api/v1/admin/invites", { method: "POST", body: JSON.stringify({ max_uses, expires_in_days }) });
 
-export const createTeam = (name: string, short_name: string) =>
-  apiFetch<TeamOut>("/api/v1/admin/teams", { method: "POST", body: JSON.stringify({ name, short_name }) });
+export interface CreateVenueRequest {
+  name: string;
+  address?: string | null;
+  course_type?: CourseType | null;
+}
+
+export const createVenue = (payload: CreateVenueRequest) =>
+  apiFetch<VenueOut>("/api/v1/admin/venues", { method: "POST", body: JSON.stringify(payload) });
+
+export interface CreateTeamRequest {
+  name: string;
+  short_name: string;
+  location?: string | null;
+  home_venue_id?: string | null;
+}
+
+export const createTeam = (payload: CreateTeamRequest) =>
+  apiFetch<TeamOut>("/api/v1/admin/teams", { method: "POST", body: JSON.stringify(payload) });
+
+export const createSwimmer = (teamId: string, name: string, class_year: number | null) =>
+  apiFetch<SwimmerOut>(`/api/v1/admin/teams/${teamId}/swimmers`, {
+    method: "POST",
+    body: JSON.stringify({ name, class_year }),
+  });
 
 export interface CreateMeetRequest {
   name: string;
-  meet_type: "dual" | "championship";
+  meet_type: "dual" | "tri" | "championship";
   home_team_id?: string | null;
   away_team_id?: string | null;
   scheduled_at?: string | null;
-  venue?: string | null;
+  venue_id?: string | null;
 }
 
 export const createMeet = (payload: CreateMeetRequest) =>
   apiFetch<MeetOut>("/api/v1/admin/meets", { method: "POST", body: JSON.stringify(payload) });
+
+export const createMeetEvent = (meetId: string, name: string, event_order: number) =>
+  apiFetch<MeetEventOut>(`/api/v1/admin/meets/${meetId}/events`, {
+    method: "POST",
+    body: JSON.stringify({ name, event_order }),
+  });
 
 export const postTickerUpdate = (meetId: string, body: string, meet_event_id?: string | null) =>
   apiFetch<TickerUpdateOut>(`/api/v1/admin/meets/${meetId}/ticker`, {
@@ -139,7 +174,7 @@ export const postTickerUpdate = (meetId: string, body: string, meet_event_id?: s
 export interface CreateMarketGroupRequest {
   title: string;
   description?: string | null;
-  outcomes: string[];
+  team_ids: string[];
   close_at?: string | null;
   meet_id?: string | null;
   meet_event_id?: string | null;

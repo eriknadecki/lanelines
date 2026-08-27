@@ -39,6 +39,7 @@ export type MarketOutcome = "yes" | "no";
 export interface MarketOut {
   id: string;
   label: string;
+  team_id: string | null;
   status: MarketStatus;
   resolved_outcome: MarketOutcome | null;
 }
@@ -80,8 +81,9 @@ export interface OrderOut {
   created_at: string;
 }
 
-export type MeetType = "dual" | "championship";
+export type MeetType = "dual" | "tri" | "championship";
 export type MeetStatus = "scheduled" | "live" | "completed";
+export type MeetEventStatus = "scheduled" | "in_progress" | "completed";
 
 export interface MeetOut {
   id: string;
@@ -91,7 +93,16 @@ export interface MeetOut {
   away_team_id: string | null;
   scheduled_at: string | null;
   status: MeetStatus;
-  venue: string | null;
+  venue_id: string | null;
+}
+
+export interface MeetEventOut {
+  id: string;
+  meet_id: string;
+  name: string;
+  event_order: number;
+  status: MeetEventStatus;
+  scheduled_at: string | null;
 }
 
 export interface TickerUpdateOut {
@@ -107,6 +118,24 @@ export interface TeamOut {
   id: string;
   name: string;
   short_name: string;
+  location: string | null;
+  home_venue_id: string | null;
+}
+
+export type CourseType = "scy" | "scm" | "lcm";
+
+export interface VenueOut {
+  id: string;
+  name: string;
+  address: string | null;
+  course_type: CourseType | null;
+}
+
+export interface SwimmerOut {
+  id: string;
+  team_id: string;
+  name: string;
+  class_year: number | null;
 }
 
 export interface InviteCheckOut {

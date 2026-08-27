@@ -317,6 +317,26 @@ th {
   margin-bottom: 16px;
 }
 
+.checkbox-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 16px;
+  max-width: 480px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 8px 12px;
+  background: var(--bg);
+}
+.checkbox-row {
+  flex-direction: row;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 0;
+  color: var(--text);
+  font-size: 14px;
+  max-width: none;
+}
+
 .ticker-feed li {
   padding: 6px 0;
   border-bottom: 1px solid var(--border);
