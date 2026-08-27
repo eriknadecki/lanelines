@@ -1,4 +1,9 @@
-"""Bootstrap the first admin user and an invite to send to friends.
+"""Bootstrap an admin user and an invite to send to friends.
+
+Idempotent: if the email already exists, it promotes that user to admin
+and resets their password to the one given, rather than silently leaving
+their role untouched (re-running this used to be a no-op on role, which
+was confusing — "I ran it again and it's still not admin").
 
 Usage:
     python scripts/create_admin.py you@example.com yourname yourpassword
@@ -31,8 +36,16 @@ def main() -> None:
     try:
         existing = db.execute(select(User).where(User.email == args.email)).scalar_one_or_none()
         if existing is not None:
-            print(f"Admin '{args.email}' already exists (id={existing.id}); skipping user creation.")
+            was_admin = existing.role == UserRole.admin
+            existing.role = UserRole.admin
+            existing.password_hash = hash_password(args.password)
+            db.commit()
+            db.refresh(existing)
             admin = existing
+            if was_admin:
+                print(f"'{admin.email}' was already admin (id={admin.id}); password reset.")
+            else:
+                print(f"Promoted existing user '{admin.email}' (id={admin.id}) to admin; password reset.")
         else:
             admin = User(
                 email=args.email,
