@@ -4,10 +4,14 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.db.models import Meet, Team, Venue
-from app.services.errors import DeletionBlockedError, NotFoundError
+from app.services.errors import AlreadyExistsError, DeletionBlockedError, NotFoundError
 
 
 def create_venue(db: Session, *, name: str, address: str | None) -> Venue:
+    existing = db.execute(select(Venue.id).where(Venue.name == name)).scalar_one_or_none()
+    if existing is not None:
+        raise AlreadyExistsError("A venue with that name already exists")
+
     venue = Venue(name=name, address=address)
     db.add(venue)
     db.commit()

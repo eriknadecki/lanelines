@@ -5,7 +5,7 @@ from sqlalchemy import or_, select
 from sqlalchemy.orm import Session
 
 from app.db.models import Market, MarketGroup, Meet, MeetEvent, MeetType, Team, TickerUpdate
-from app.services.errors import DeletionBlockedError, NotFoundError
+from app.services.errors import AlreadyExistsError, DeletionBlockedError, NotFoundError
 
 
 def create_team(
@@ -16,6 +16,10 @@ def create_team(
     location: str | None,
     home_venue_id: uuid.UUID | None,
 ) -> Team:
+    existing = db.execute(select(Team.id).where(Team.name == name)).scalar_one_or_none()
+    if existing is not None:
+        raise AlreadyExistsError("A team with that name already exists")
+
     team = Team(name=name, short_name=short_name, location=location, home_venue_id=home_venue_id)
     db.add(team)
     db.commit()

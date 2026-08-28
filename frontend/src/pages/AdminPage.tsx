@@ -94,6 +94,39 @@ function SubmitButton({
   );
 }
 
+const FILL_REQUIRED_MESSAGE = "Fill in required fields";
+
+// Client-side validation for required fields: replaces the browser's native
+// "fill this in" popup with a red border on the empty field(s), driven by
+// the same submit-button-turns-red mechanism used for backend errors.
+function useValidation() {
+  const [invalid, setInvalid] = useState<Set<string>>(new Set());
+
+  function check(fields: Record<string, string>): boolean {
+    const missing = new Set<string>();
+    for (const [key, value] of Object.entries(fields)) {
+      if (!value.trim()) missing.add(key);
+    }
+    setInvalid(missing);
+    return missing.size === 0;
+  }
+
+  function fieldClass(key: string): string | undefined {
+    return invalid.has(key) ? "input-invalid" : undefined;
+  }
+
+  return { check, fieldClass };
+}
+
+function FieldLabel({ children, required }: { children: React.ReactNode; required?: boolean }) {
+  return (
+    <span>
+      {children}
+      {required && <span className="required-asterisk"> *</span>}
+    </span>
+  );
+}
+
 // Deletion is guarded server-side (a 409 means something still references
 // this row), so on failure the button itself turns red and shows the
 // backend's explanation rather than trying to predict what's deletable.
@@ -259,9 +292,14 @@ function VenueSection({
   const [name, setName] = useState("");
   const [address, setAddress] = useState("");
   const submit = useSubmitStatus();
+  const validation = useValidation();
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
+    if (!validation.check({ name })) {
+      submit.fail(FILL_REQUIRED_MESSAGE);
+      return;
+    }
     submit.start();
     try {
       await createVenue({ name, address: address || null });
@@ -278,8 +316,13 @@ function VenueSection({
     <Section title="Create venue">
       <form onSubmit={handleSubmit}>
         <label>
-          Name
-          <input value={name} onChange={(e) => setName(e.target.value)} required placeholder="DeNunzio Pool" />
+          <FieldLabel required>Name</FieldLabel>
+          <input
+            className={validation.fieldClass("name")}
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            placeholder="DeNunzio Pool"
+          />
         </label>
         <label>
           Address / location
@@ -318,9 +361,14 @@ function TeamSection({
   const [location, setLocation] = useState("");
   const [homeVenueId, setHomeVenueId] = useState("");
   const submit = useSubmitStatus();
+  const validation = useValidation();
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
+    if (!validation.check({ name, shortName })) {
+      submit.fail(FILL_REQUIRED_MESSAGE);
+      return;
+    }
     submit.start();
     try {
       await createTeam({
@@ -344,12 +392,22 @@ function TeamSection({
     <Section title="Create team">
       <form onSubmit={handleSubmit}>
         <label>
-          Name
-          <input value={name} onChange={(e) => setName(e.target.value)} required placeholder="Princeton" />
+          <FieldLabel required>Name</FieldLabel>
+          <input
+            className={validation.fieldClass("name")}
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            placeholder="Princeton"
+          />
         </label>
         <label>
-          Short name
-          <input value={shortName} onChange={(e) => setShortName(e.target.value)} required placeholder="PRIN" />
+          <FieldLabel required>Short name</FieldLabel>
+          <input
+            className={validation.fieldClass("shortName")}
+            value={shortName}
+            onChange={(e) => setShortName(e.target.value)}
+            placeholder="PRIN"
+          />
         </label>
         <label>
           Location
@@ -390,6 +448,7 @@ function SwimmerSection({ teams }: { teams: TeamOut[] }) {
   const [roster, setRoster] = useState<SwimmerOut[]>([]);
   const addSubmit = useSubmitStatus();
   const csvSubmit = useSubmitStatus();
+  const addValidation = useValidation();
 
   const refreshRoster = () => {
     if (!teamId) {
@@ -403,6 +462,10 @@ function SwimmerSection({ teams }: { teams: TeamOut[] }) {
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
+    if (!addValidation.check({ name })) {
+      addSubmit.fail(FILL_REQUIRED_MESSAGE);
+      return;
+    }
     addSubmit.start();
     try {
       await createSwimmer(teamId, name, classStanding || null);
@@ -432,8 +495,8 @@ function SwimmerSection({ teams }: { teams: TeamOut[] }) {
   return (
     <Section title="Roster">
       <label>
-        Team
-        <select value={teamId} onChange={(e) => setTeamId(e.target.value)} required>
+        <FieldLabel required>Team</FieldLabel>
+        <select value={teamId} onChange={(e) => setTeamId(e.target.value)}>
           <option value="" disabled>
             Select a team
           </option>
@@ -447,8 +510,13 @@ function SwimmerSection({ teams }: { teams: TeamOut[] }) {
 
       <form onSubmit={handleSubmit}>
         <label>
-          Name
-          <input value={name} onChange={(e) => setName(e.target.value)} required placeholder="Alex Smith" />
+          <FieldLabel required>Name</FieldLabel>
+          <input
+            className={addValidation.fieldClass("name")}
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            placeholder="Alex Smith"
+          />
         </label>
         <label>
           Class (optional)
@@ -516,6 +584,7 @@ function MeetSection({
   const [venueId, setVenueId] = useState("");
   const [scheduledAt, setScheduledAt] = useState("");
   const submit = useSubmitStatus();
+  const validation = useValidation();
 
   // Suggest the two teams' home venues first, so the common case (a dual
   // meet at one team's pool) is a top-of-list pick rather than a search.
@@ -530,6 +599,10 @@ function MeetSection({
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
+    if (!validation.check({ name })) {
+      submit.fail(FILL_REQUIRED_MESSAGE);
+      return;
+    }
     submit.start();
     try {
       await createMeet({
@@ -556,8 +629,13 @@ function MeetSection({
     <Section title="Create meet">
       <form onSubmit={handleSubmit}>
         <label>
-          Name
-          <input value={name} onChange={(e) => setName(e.target.value)} required placeholder="Princeton vs Harvard" />
+          <FieldLabel required>Name</FieldLabel>
+          <input
+            className={validation.fieldClass("name")}
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            placeholder="Princeton vs Harvard"
+          />
         </label>
         <label>
           Type
@@ -637,6 +715,7 @@ function MeetEventSection({ meets }: { meets: MeetOut[] }) {
   const [eventOrder, setEventOrder] = useState("0");
   const [events, setEvents] = useState<MeetEventOut[]>([]);
   const submit = useSubmitStatus();
+  const validation = useValidation();
 
   const refreshEvents = () => {
     if (!meetId) {
@@ -650,6 +729,10 @@ function MeetEventSection({ meets }: { meets: MeetOut[] }) {
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
+    if (!validation.check({ meetId, name })) {
+      submit.fail(FILL_REQUIRED_MESSAGE);
+      return;
+    }
     submit.start();
     try {
       await createMeetEvent(meetId, name, Number(eventOrder));
@@ -665,8 +748,12 @@ function MeetEventSection({ meets }: { meets: MeetOut[] }) {
     <Section title="Add an event to a meet">
       <form onSubmit={handleSubmit}>
         <label>
-          Meet
-          <select value={meetId} onChange={(e) => setMeetId(e.target.value)} required>
+          <FieldLabel required>Meet</FieldLabel>
+          <select
+            className={validation.fieldClass("meetId")}
+            value={meetId}
+            onChange={(e) => setMeetId(e.target.value)}
+          >
             <option value="" disabled>
               Select a meet
             </option>
@@ -678,8 +765,13 @@ function MeetEventSection({ meets }: { meets: MeetOut[] }) {
           </select>
         </label>
         <label>
-          Event name
-          <input value={name} onChange={(e) => setName(e.target.value)} required placeholder="200 Free Relay" />
+          <FieldLabel required>Event name</FieldLabel>
+          <input
+            className={validation.fieldClass("name")}
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            placeholder="200 Free Relay"
+          />
         </label>
         <label>
           Order (lower runs first)
@@ -724,6 +816,7 @@ function MarketGroupSection({
   const [meetEventId, setMeetEventId] = useState("");
   const [events, setEvents] = useState<MeetEventOut[]>([]);
   const submit = useSubmitStatus();
+  const validation = useValidation();
 
   useEffect(() => {
     setMeetEventId("");
@@ -740,6 +833,10 @@ function MarketGroupSection({
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
+    if (!validation.check({ title })) {
+      submit.fail(FILL_REQUIRED_MESSAGE);
+      return;
+    }
     submit.start();
     try {
       const group = await createMarketGroup({
@@ -761,11 +858,16 @@ function MarketGroupSection({
     <Section title="Create outcome (what people can bet on)">
       <form onSubmit={handleSubmit}>
         <label className="field-full">
-          Title
-          <input value={title} onChange={(e) => setTitle(e.target.value)} required placeholder="Who wins the meet?" />
+          <FieldLabel required>Title</FieldLabel>
+          <input
+            className={validation.fieldClass("title")}
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            placeholder="Who wins the meet?"
+          />
         </label>
         <label className="field-full">
-          Teams (one market per team you check)
+          <FieldLabel required>Teams (one market per team you check)</FieldLabel>
           <div className="checkbox-list">
             {teams.map((t) => (
               <label key={t.id} className="checkbox-row">
@@ -827,9 +929,14 @@ function TickerSection({ meets }: { meets: MeetOut[] }) {
   const [meetId, setMeetId] = useState("");
   const [body, setBody] = useState("");
   const submit = useSubmitStatus();
+  const validation = useValidation();
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
+    if (!validation.check({ meetId, body })) {
+      submit.fail(FILL_REQUIRED_MESSAGE);
+      return;
+    }
     submit.start();
     try {
       await postTickerUpdate(meetId, body);
@@ -844,8 +951,12 @@ function TickerSection({ meets }: { meets: MeetOut[] }) {
     <Section title="Post ticker update">
       <form onSubmit={handleSubmit}>
         <label>
-          Meet
-          <select value={meetId} onChange={(e) => setMeetId(e.target.value)} required>
+          <FieldLabel required>Meet</FieldLabel>
+          <select
+            className={validation.fieldClass("meetId")}
+            value={meetId}
+            onChange={(e) => setMeetId(e.target.value)}
+          >
             <option value="" disabled>
               Select a meet
             </option>
@@ -857,11 +968,11 @@ function TickerSection({ meets }: { meets: MeetOut[] }) {
           </select>
         </label>
         <label>
-          Update
+          <FieldLabel required>Update</FieldLabel>
           <input
+            className={validation.fieldClass("body")}
             value={body}
             onChange={(e) => setBody(e.target.value)}
-            required
             placeholder="Princeton wins the 200 Free Relay"
           />
         </label>
@@ -880,9 +991,14 @@ function TickerSection({ meets }: { meets: MeetOut[] }) {
 function CloseMarketSection({ groups, onChanged }: { groups: MarketGroupOut[]; onChanged: () => void }) {
   const [marketId, setMarketId] = useState("");
   const submit = useSubmitStatus();
+  const validation = useValidation();
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
+    if (!validation.check({ marketId })) {
+      submit.fail(FILL_REQUIRED_MESSAGE);
+      return;
+    }
     submit.start();
     try {
       await closeMarket(marketId);
@@ -897,8 +1013,12 @@ function CloseMarketSection({ groups, onChanged }: { groups: MarketGroupOut[]; o
     <Section title="Close market (halt trading)">
       <form onSubmit={handleSubmit}>
         <label className="field-full">
-          Market
-          <select value={marketId} onChange={(e) => setMarketId(e.target.value)} required>
+          <FieldLabel required>Market</FieldLabel>
+          <select
+            className={validation.fieldClass("marketId")}
+            value={marketId}
+            onChange={(e) => setMarketId(e.target.value)}
+          >
             <option value="" disabled>
               Select a market
             </option>
@@ -929,11 +1049,16 @@ function ResolveSection({ groups, onResolved }: { groups: MarketGroupOut[]; onRe
   const [groupId, setGroupId] = useState("");
   const [winningMarketId, setWinningMarketId] = useState("");
   const submit = useSubmitStatus();
+  const validation = useValidation();
 
   const selectedGroup = groups.find((g) => g.id === groupId);
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
+    if (!validation.check({ groupId, winningMarketId })) {
+      submit.fail(FILL_REQUIRED_MESSAGE);
+      return;
+    }
     submit.start();
     try {
       await resolveMarketGroup(groupId, winningMarketId);
@@ -948,14 +1073,14 @@ function ResolveSection({ groups, onResolved }: { groups: MarketGroupOut[]; onRe
     <Section title="Resolve outcome">
       <form onSubmit={handleSubmit}>
         <label>
-          Outcome group
+          <FieldLabel required>Outcome group</FieldLabel>
           <select
+            className={validation.fieldClass("groupId")}
             value={groupId}
             onChange={(e) => {
               setGroupId(e.target.value);
               setWinningMarketId("");
             }}
-            required
           >
             <option value="" disabled>
               Select a group
@@ -971,8 +1096,12 @@ function ResolveSection({ groups, onResolved }: { groups: MarketGroupOut[]; onRe
         </label>
         {selectedGroup && (
           <label>
-            Which outcome won?
-            <select value={winningMarketId} onChange={(e) => setWinningMarketId(e.target.value)} required>
+            <FieldLabel required>Which outcome won?</FieldLabel>
+            <select
+              className={validation.fieldClass("winningMarketId")}
+              value={winningMarketId}
+              onChange={(e) => setWinningMarketId(e.target.value)}
+            >
               <option value="" disabled>
                 Select the winner
               </option>

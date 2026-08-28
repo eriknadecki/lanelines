@@ -44,6 +44,7 @@ from app.services import (
     venue_service,
 )
 from app.services.errors import (
+    AlreadyExistsError,
     AlreadyResolvedError,
     DeletionBlockedError,
     NotFoundError,
@@ -57,7 +58,7 @@ router = APIRouter(prefix="/admin", tags=["admin"])
 def _to_http_error(exc: ServiceError) -> HTTPException:
     if isinstance(exc, NotFoundError):
         return HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc))
-    if isinstance(exc, (DeletionBlockedError, AlreadyResolvedError)):
+    if isinstance(exc, (DeletionBlockedError, AlreadyResolvedError, AlreadyExistsError)):
         return HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(exc))
     return HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc))
 
@@ -88,7 +89,10 @@ def create_venue(
     db: Session = Depends(get_db),
     admin: User = Depends(require_admin),
 ) -> Venue:
-    return venue_service.create_venue(db, name=payload.name, address=payload.address)
+    try:
+        return venue_service.create_venue(db, name=payload.name, address=payload.address)
+    except ServiceError as exc:
+        raise _to_http_error(exc) from exc
 
 
 @router.delete("/venues/{venue_id}", status_code=status.HTTP_204_NO_CONTENT)
@@ -109,13 +113,16 @@ def create_team(
     db: Session = Depends(get_db),
     admin: User = Depends(require_admin),
 ) -> Team:
-    return meet_service.create_team(
-        db,
-        name=payload.name,
-        short_name=payload.short_name,
-        location=payload.location,
-        home_venue_id=payload.home_venue_id,
-    )
+    try:
+        return meet_service.create_team(
+            db,
+            name=payload.name,
+            short_name=payload.short_name,
+            location=payload.location,
+            home_venue_id=payload.home_venue_id,
+        )
+    except ServiceError as exc:
+        raise _to_http_error(exc) from exc
 
 
 @router.delete("/teams/{team_id}", status_code=status.HTTP_204_NO_CONTENT)

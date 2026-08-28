@@ -115,6 +115,14 @@ select {
   background: var(--bg);
   color: var(--text);
 }
+input.input-invalid,
+select.input-invalid {
+  border-color: var(--danger);
+}
+
+.required-asterisk {
+  color: var(--danger);
+}
 
 label {
   display: flex;
@@ -172,6 +180,7 @@ th {
   border-radius: 8px;
   color: var(--text);
   font-weight: 500;
+  transition: background-color 100ms ease-out, color 100ms ease-out;
 }
 .nav-link:hover {
   background: var(--hover-overlay);
@@ -361,7 +370,7 @@ th {
 }
 .admin-section form > button {
   grid-column: 1 / -1;
-  justify-self: start;
+  justify-self: center;
   margin-top: 8px;
   min-width: 160px;
 }
@@ -391,6 +400,7 @@ th {
   font-size: 14px;
   color: var(--text);
   cursor: pointer;
+  transition: background-color 100ms ease-out, color 100ms ease-out;
 }
 .admin-sidebar-item:hover {
   background: var(--hover-overlay);
@@ -466,6 +476,7 @@ th {
   cursor: pointer;
   color: #c0392b;
   flex-shrink: 0;
+  transition: background-color 100ms ease-out, color 100ms ease-out;
 }
 .delete-button:hover {
   background: #c0392b;

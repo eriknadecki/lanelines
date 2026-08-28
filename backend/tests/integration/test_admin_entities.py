@@ -37,6 +37,17 @@ def test_create_venue_and_list_it(client, db_session):
     assert any(v["id"] == venue["id"] for v in listing)
 
 
+def test_create_venue_rejects_duplicate_name(client, db_session):
+    admin = _make_admin(db_session)
+    headers = _admin_headers(admin)
+
+    first = client.post("/api/v1/admin/venues", json={"name": "Katherine Moran Pool"}, headers=headers)
+    assert first.status_code == 201
+
+    second = client.post("/api/v1/admin/venues", json={"name": "Katherine Moran Pool"}, headers=headers)
+    assert second.status_code == 409
+
+
 def test_create_team_with_profile_and_home_venue(client, db_session):
     admin = _make_admin(db_session)
     headers = _admin_headers(admin)
@@ -57,6 +68,17 @@ def test_create_team_with_profile_and_home_venue(client, db_session):
 
     listing = client.get("/api/v1/teams").json()
     assert any(t["id"] == team["id"] for t in listing)
+
+
+def test_create_team_rejects_duplicate_name(client, db_session):
+    admin = _make_admin(db_session)
+    headers = _admin_headers(admin)
+
+    first = client.post("/api/v1/admin/teams", json={"name": "Duplicate U", "short_name": "DUP1"}, headers=headers)
+    assert first.status_code == 201
+
+    second = client.post("/api/v1/admin/teams", json={"name": "Duplicate U", "short_name": "DUP2"}, headers=headers)
+    assert second.status_code == 409
 
 
 def test_add_swimmer_to_roster_and_list_it(client, db_session):
