@@ -3,6 +3,8 @@ import { Link, NavLink, Outlet } from "react-router-dom";
 import { getBalance } from "../api/client";
 import { useLiveChannels } from "../api/ws";
 import { useAuth } from "../auth/AuthContext";
+import { SearchBox } from "./SearchBox";
+import { TopLoadingBar } from "./TopLoadingBar";
 import type { BalanceOut } from "../api/types";
 
 function Logo() {
@@ -59,6 +61,7 @@ export function Layout() {
 
   return (
     <div className="app-shell">
+      <TopLoadingBar />
       <header className="topbar">
         <Link to="/markets" className="brand">
           <Logo />
@@ -80,6 +83,7 @@ export function Layout() {
               Admin
             </NavLink>
           )}
+          <SearchBox />
         </nav>
         <div className="topbar-right">
           {user ? (

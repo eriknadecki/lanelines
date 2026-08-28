@@ -201,7 +201,7 @@ th {
 .balance-pill {
   background: var(--bg-subtle);
   border: 1px solid var(--border);
-  border-radius: 999px;
+  border-radius: 8px;
   padding: 4px 12px;
   font-weight: 600;
   color: var(--text-h);
@@ -497,4 +497,83 @@ th {
   font-family: var(--mono);
   font-size: 12px;
   margin-right: 8px;
+}
+
+.top-loading-bar-track {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  z-index: 2000;
+  pointer-events: none;
+}
+.top-loading-bar {
+  height: 100%;
+  background: var(--accent);
+  box-shadow: 0 0 8px var(--accent);
+  transition: width 200ms ease-out, opacity 200ms ease-out;
+}
+
+.search-box {
+  position: relative;
+  margin-left: 8px;
+  align-self: center;
+}
+.search-box input {
+  width: 220px;
+  padding: 6px 10px;
+}
+.search-dropdown {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  width: 320px;
+  max-height: 420px;
+  overflow-y: auto;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+  padding: 8px;
+  z-index: 1000;
+}
+.search-group {
+  margin-bottom: 8px;
+}
+.search-group:last-child {
+  margin-bottom: 0;
+}
+.search-group h4 {
+  margin: 0 0 4px;
+  padding: 0 8px;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-muted);
+}
+.search-group button {
+  display: block;
+  width: 100%;
+  text-align: left;
+  background: transparent;
+  color: var(--text);
+  padding: 6px 8px;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: normal;
+  border: none;
+  transition: background-color 100ms ease-out;
+}
+.search-group button:hover {
+  background: var(--hover-overlay);
+}
+.search-static {
+  padding: 6px 8px;
+  font-size: 14px;
+  color: var(--text);
+}
+.search-empty {
+  padding: 8px;
+  margin: 0;
 }

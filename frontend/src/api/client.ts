@@ -1,3 +1,4 @@
+import { beginRequest, endRequest } from "./loadingIndicator";
 import type {
   BalanceOut,
   BookSnapshotOut,
@@ -9,6 +10,7 @@ import type {
   MeetOut,
   OrderOut,
   PositionOut,
+  SearchResultsOut,
   SwimmerOut,
   TeamOut,
   TickerUpdateOut,
@@ -94,6 +96,15 @@ async function refreshAccessToken(): Promise<boolean> {
 }
 
 async function apiFetch<T>(path: string, options: RequestInit = {}, isRetry = false): Promise<T> {
+  beginRequest();
+  try {
+    return await apiFetchInner<T>(path, options, isRetry);
+  } finally {
+    endRequest();
+  }
+}
+
+async function apiFetchInner<T>(path: string, options: RequestInit, isRetry: boolean): Promise<T> {
   const token = getAccessToken();
   const headers = new Headers(options.headers);
   headers.set("Content-Type", "application/json");
@@ -103,7 +114,7 @@ async function apiFetch<T>(path: string, options: RequestInit = {}, isRetry = fa
 
   if (response.status === 401 && token && !isRetry && path !== "/api/v1/auth/refresh") {
     if (await refreshAccessTokenOnce()) {
-      return apiFetch<T>(path, options, true);
+      return apiFetchInner<T>(path, options, true);
     }
     clearTokens();
   }
@@ -171,6 +182,7 @@ export const listMeets = () => apiFetch<MeetOut[]>("/api/v1/meets");
 export const getMeet = (meetId: string) => apiFetch<MeetOut>(`/api/v1/meets/${meetId}`);
 export const listMeetEvents = (meetId: string) => apiFetch<MeetEventOut[]>(`/api/v1/meets/${meetId}/events`);
 export const getMeetTicker = (meetId: string) => apiFetch<TickerUpdateOut[]>(`/api/v1/meets/${meetId}/ticker`);
+export const search = (q: string) => apiFetch<SearchResultsOut>(`/api/v1/search?q=${encodeURIComponent(q)}`);
 
 // --- admin ---
 export const createInvite = (max_uses: number, expires_in_days: number | null) =>
@@ -204,29 +216,34 @@ export const deleteSwimmer = (teamId: string, swimmerId: string) =>
   apiFetch<void>(`/api/v1/admin/teams/${teamId}/swimmers/${swimmerId}`, { method: "DELETE" });
 
 export async function uploadRosterCsv(teamId: string, file: File): Promise<SwimmerOut[]> {
-  const token = getAccessToken();
-  const headers = new Headers();
-  if (token) headers.set("Authorization", `Bearer ${token}`);
+  beginRequest();
+  try {
+    const token = getAccessToken();
+    const headers = new Headers();
+    if (token) headers.set("Authorization", `Bearer ${token}`);
 
-  const formData = new FormData();
-  formData.append("file", file);
+    const formData = new FormData();
+    formData.append("file", file);
 
-  const response = await fetch(`${API_BASE_URL}/api/v1/admin/teams/${teamId}/swimmers/upload-csv`, {
-    method: "POST",
-    headers,
-    body: formData,
-  });
-  if (!response.ok) {
-    let detail = response.statusText;
-    try {
-      const body = await response.json();
-      detail = body.detail ?? detail;
-    } catch {
-      // response had no JSON body
+    const response = await fetch(`${API_BASE_URL}/api/v1/admin/teams/${teamId}/swimmers/upload-csv`, {
+      method: "POST",
+      headers,
+      body: formData,
+    });
+    if (!response.ok) {
+      let detail = response.statusText;
+      try {
+        const body = await response.json();
+        detail = body.detail ?? detail;
+      } catch {
+        // response had no JSON body
+      }
+      throw new ApiError(response.status, detail);
     }
-    throw new ApiError(response.status, detail);
+    return (await response.json()) as SwimmerOut[];
+  } finally {
+    endRequest();
   }
-  return (await response.json()) as SwimmerOut[];
 }
 
 export const deleteVenue = (venueId: string) => apiFetch<void>(`/api/v1/admin/venues/${venueId}`, { method: "DELETE" });

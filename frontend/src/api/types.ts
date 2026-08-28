@@ -135,6 +135,38 @@ export interface SwimmerOut {
   class_standing: string | null;
 }
 
+export interface MarketSearchResult {
+  id: string;
+  label: string;
+  group_title: string;
+  status: MarketStatus;
+}
+
+export interface MeetSearchResult {
+  id: string;
+  name: string;
+  meet_type: MeetType;
+}
+
+export interface TeamSearchResult {
+  id: string;
+  name: string;
+  short_name: string;
+}
+
+export interface SwimmerSearchResult {
+  id: string;
+  name: string;
+  team_name: string;
+}
+
+export interface SearchResultsOut {
+  markets: MarketSearchResult[];
+  meets: MeetSearchResult[];
+  teams: TeamSearchResult[];
+  swimmers: SwimmerSearchResult[];
+}
+
 export interface InviteCheckOut {
   valid: boolean;
   reason: string | null;
