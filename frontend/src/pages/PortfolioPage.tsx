@@ -27,7 +27,6 @@ export function PortfolioPage() {
 
   return (
     <div>
-      <h1>Portfolio</h1>
       {balance && (
         <div className="balance-summary">
           <div>

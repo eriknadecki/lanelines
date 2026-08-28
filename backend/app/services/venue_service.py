@@ -3,12 +3,12 @@ import uuid
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app.db.models import CourseType, Meet, Team, Venue
+from app.db.models import Meet, Team, Venue
 from app.services.errors import DeletionBlockedError, NotFoundError
 
 
-def create_venue(db: Session, *, name: str, address: str | None, course_type: CourseType | None) -> Venue:
-    venue = Venue(name=name, address=address, course_type=course_type)
+def create_venue(db: Session, *, name: str, address: str | None) -> Venue:
+    venue = Venue(name=name, address=address)
     db.add(venue)
     db.commit()
     db.refresh(venue)

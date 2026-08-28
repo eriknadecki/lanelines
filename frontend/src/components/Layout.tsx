@@ -1,9 +1,42 @@
 import { useEffect, useState } from "react";
-import { Link, Outlet } from "react-router-dom";
+import { Link, NavLink, Outlet } from "react-router-dom";
 import { getBalance } from "../api/client";
 import { useLiveChannels } from "../api/ws";
 import { useAuth } from "../auth/AuthContext";
 import type { BalanceOut } from "../api/types";
+
+function Logo() {
+  return (
+    <svg width="28" height="28" viewBox="0 0 32 32" fill="none" aria-hidden="true">
+      <rect width="32" height="32" rx="9" fill="var(--accent)" />
+      <path
+        d="M4 11 C 8 8, 12 14, 16 11 C 20 8, 24 14, 28 11"
+        stroke="white"
+        strokeWidth="2"
+        strokeLinecap="round"
+        fill="none"
+      />
+      <path
+        d="M4 16 C 8 13, 12 19, 16 16 C 20 13, 24 19, 28 16"
+        stroke="white"
+        strokeWidth="2"
+        strokeLinecap="round"
+        fill="none"
+      />
+      <path
+        d="M4 21 C 8 18, 12 24, 16 21 C 20 18, 24 24, 28 21"
+        stroke="white"
+        strokeWidth="2"
+        strokeLinecap="round"
+        fill="none"
+      />
+    </svg>
+  );
+}
+
+function navLinkClassName({ isActive }: { isActive: boolean }): string {
+  return "nav-link" + (isActive ? " active" : "");
+}
 
 export function Layout() {
   const { user, logout } = useAuth();
@@ -28,13 +61,25 @@ export function Layout() {
     <div className="app-shell">
       <header className="topbar">
         <Link to="/markets" className="brand">
-          Lanelines
+          <Logo />
         </Link>
         <nav>
-          <Link to="/markets">Markets</Link>
-          <Link to="/meets">Meets</Link>
-          {user && <Link to="/portfolio">Portfolio</Link>}
-          {user?.role === "admin" && <Link to="/admin">Admin</Link>}
+          <NavLink to="/markets" className={navLinkClassName}>
+            Markets
+          </NavLink>
+          <NavLink to="/meets" className={navLinkClassName}>
+            Meets
+          </NavLink>
+          {user && (
+            <NavLink to="/portfolio" className={navLinkClassName}>
+              Portfolio
+            </NavLink>
+          )}
+          {user?.role === "admin" && (
+            <NavLink to="/admin" className={navLinkClassName}>
+              Admin
+            </NavLink>
+          )}
         </nav>
         <div className="topbar-right">
           {user ? (

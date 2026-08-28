@@ -88,7 +88,7 @@ def create_venue(
     db: Session = Depends(get_db),
     admin: User = Depends(require_admin),
 ) -> Venue:
-    return venue_service.create_venue(db, name=payload.name, address=payload.address, course_type=payload.course_type)
+    return venue_service.create_venue(db, name=payload.name, address=payload.address)
 
 
 @router.delete("/venues/{venue_id}", status_code=status.HTTP_204_NO_CONTENT)

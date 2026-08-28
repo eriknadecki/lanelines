@@ -122,13 +122,10 @@ export interface TeamOut {
   home_venue_id: string | null;
 }
 
-export type CourseType = "scy" | "scm" | "lcm";
-
 export interface VenueOut {
   id: string;
   name: string;
   address: string | null;
-  course_type: CourseType | null;
 }
 
 export interface SwimmerOut {

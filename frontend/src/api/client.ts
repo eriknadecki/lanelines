@@ -1,7 +1,6 @@
 import type {
   BalanceOut,
   BookSnapshotOut,
-  CourseType,
   InviteCheckOut,
   InviteOut,
   MarketGroupOut,
@@ -180,7 +179,6 @@ export const createInvite = (max_uses: number, expires_in_days: number | null) =
 export interface CreateVenueRequest {
   name: string;
   address?: string | null;
-  course_type?: CourseType | null;
 }
 
 export const createVenue = (payload: CreateVenueRequest) =>

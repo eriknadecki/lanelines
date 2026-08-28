@@ -10,12 +10,11 @@ from app.db.models.team import Team
 from app.db.models.ticker_update import TickerUpdate
 from app.db.models.trade import Trade
 from app.db.models.user import User, UserRole
-from app.db.models.venue import CourseType, Venue
+from app.db.models.venue import Venue
 
 __all__ = [
     "Account",
     "AccountOwnerType",
-    "CourseType",
     "Invite",
     "LedgerEntry",
     "LedgerEntryType",

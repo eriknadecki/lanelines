@@ -26,13 +26,12 @@ def test_create_venue_and_list_it(client, db_session):
 
     resp = client.post(
         "/api/v1/admin/venues",
-        json={"name": "DeNunzio Pool", "address": "Princeton, NJ", "course_type": "scy"},
+        json={"name": "DeNunzio Pool", "address": "Princeton, NJ"},
         headers=headers,
     )
     assert resp.status_code == 201
     venue = resp.json()
     assert venue["name"] == "DeNunzio Pool"
-    assert venue["course_type"] == "scy"
 
     listing = client.get("/api/v1/venues").json()
     assert any(v["id"] == venue["id"] for v in listing)

@@ -26,7 +26,6 @@ import {
   uploadRosterCsv,
 } from "../api/client";
 import type {
-  CourseType,
   MarketGroupOut,
   MeetEventOut,
   MeetOut,
@@ -113,7 +112,6 @@ export function AdminPage() {
 
   return (
     <div>
-      <h1>Admin</h1>
       <div className="admin-layout">
         <nav className="admin-sidebar">
           {ADMIN_SECTIONS.map((s) => (
@@ -205,7 +203,6 @@ function VenueSection({
 }) {
   const [name, setName] = useState("");
   const [address, setAddress] = useState("");
-  const [courseType, setCourseType] = useState<CourseType | "">("");
   const [result, setResult] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -213,7 +210,7 @@ function VenueSection({
     e.preventDefault();
     setError(null);
     try {
-      const venue = await createVenue({ name, address: address || null, course_type: courseType || null });
+      const venue = await createVenue({ name, address: address || null });
       setResult(`Created venue "${venue.name}"`);
       setName("");
       setAddress("");
@@ -233,15 +230,6 @@ function VenueSection({
         <label>
           Address / location
           <input value={address} onChange={(e) => setAddress(e.target.value)} placeholder="Princeton, NJ" />
-        </label>
-        <label>
-          Course type
-          <select value={courseType} onChange={(e) => setCourseType(e.target.value as CourseType | "")}>
-            <option value="">Unspecified</option>
-            <option value="scy">Short course yards (25yd)</option>
-            <option value="scm">Short course meters (25m)</option>
-            <option value="lcm">Long course meters (50m)</option>
-          </select>
         </label>
         <button type="submit">Create venue</button>
       </form>

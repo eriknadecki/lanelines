@@ -1,12 +1,13 @@
 :root {
-  --text: #3f3d45;
-  --text-h: #0b0a0d;
-  --text-muted: #7a7885;
+  --text: #33404d;
+  --text-h: #0a1a26;
+  --text-muted: #64798a;
   --bg: #ffffff;
-  --bg-subtle: #f7f7f9;
-  --border: #e3e2e6;
-  --accent: #6d28d9;
+  --bg-subtle: #eef6fb;
+  --border: #d7e6ef;
+  --accent: #0284c7;
   --accent-contrast: #ffffff;
+  --hover-overlay: rgba(2, 66, 99, 0.07);
   --success: #15803d;
   --danger: #b91c1c;
   --sans: system-ui, "Segoe UI", Roboto, sans-serif;
@@ -16,14 +17,15 @@
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --text: #d4d2da;
-    --text-h: #f5f4f7;
-    --text-muted: #8f8d99;
-    --bg: #131217;
-    --bg-subtle: #1b1a21;
-    --border: #2c2a33;
-    --accent: #a78bfa;
-    --accent-contrast: #131217;
+    --text: #cdd8e1;
+    --text-h: #f2f7fb;
+    --text-muted: #8697a5;
+    --bg: #0a1620;
+    --bg-subtle: #101f2d;
+    --border: #1e3040;
+    --accent: #38bdf8;
+    --accent-contrast: #06202e;
+    --hover-overlay: rgba(255, 255, 255, 0.08);
   }
 }
 
@@ -145,13 +147,33 @@ th {
   border-bottom: 1px solid var(--border);
 }
 .brand {
+  display: flex;
+  align-items: center;
+  gap: 8px;
   font-weight: 700;
   color: var(--text-h);
 }
 .topbar nav {
   display: flex;
-  gap: 16px;
+  gap: 4px;
   flex: 1;
+}
+.nav-link {
+  padding: 6px 14px;
+  border-radius: 8px;
+  color: var(--text);
+  font-weight: 500;
+}
+.nav-link:hover {
+  background: var(--hover-overlay);
+  text-decoration: none;
+}
+.nav-link.active {
+  background: var(--accent);
+  color: var(--accent-contrast);
+}
+.nav-link.active:hover {
+  background: var(--accent);
 }
 .topbar-right {
   display: flex;
@@ -341,7 +363,7 @@ th {
   cursor: pointer;
 }
 .admin-sidebar-item:hover {
-  background: var(--bg);
+  background: var(--hover-overlay);
 }
 .admin-sidebar-item.active {
   background: var(--accent);
@@ -351,6 +373,13 @@ th {
 .admin-content {
   flex: 1;
   min-width: 0;
+}
+.admin-content label:not(.checkbox-row) {
+  max-width: 520px;
+}
+.admin-content input:not([type="checkbox"]):not([type="file"]),
+.admin-content select {
+  width: 100%;
 }
 
 .checkbox-list {
