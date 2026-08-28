@@ -44,35 +44,85 @@ function Section({ title, children }: { title: string; children: React.ReactNode
   );
 }
 
-function ResultLine({ result, error }: { result: string | null; error: string | null }) {
-  if (error) return <p className="form-banner error">{error}</p>;
-  if (result) return <p className="form-banner success">{result}</p>;
-  return null;
+type SubmitStatus = "idle" | "pending" | "success" | "error";
+
+// The submit button itself is the feedback surface: click it, it shows a
+// pending label, then turns green with a short confirmation or red with the
+// backend's error, then reverts so the form is ready for the next action.
+function useSubmitStatus(revertMs = 2200) {
+  const [status, setStatus] = useState<SubmitStatus>("idle");
+  const [message, setMessage] = useState<string | null>(null);
+
+  function start() {
+    setStatus("pending");
+    setMessage(null);
+  }
+  function succeed(msg: string) {
+    setStatus("success");
+    setMessage(msg);
+    window.setTimeout(() => setStatus("idle"), revertMs);
+  }
+  function fail(msg: string) {
+    setStatus("error");
+    setMessage(msg);
+    window.setTimeout(() => setStatus("idle"), revertMs + 1200);
+  }
+
+  return { status, message, start, succeed, fail };
+}
+
+function SubmitButton({
+  status,
+  message,
+  idleLabel,
+  pendingLabel = "Working...",
+  disabled,
+}: {
+  status: SubmitStatus;
+  message: string | null;
+  idleLabel: string;
+  pendingLabel?: string;
+  disabled?: boolean;
+}) {
+  const label =
+    status === "pending" ? pendingLabel : status === "success" || status === "error" ? (message ?? idleLabel) : idleLabel;
+  const className = "submit-button" + (status === "success" ? " success" : status === "error" ? " error" : "");
+  return (
+    <button type="submit" className={className} disabled={disabled || status === "pending"}>
+      {label}
+    </button>
+  );
 }
 
 // Deletion is guarded server-side (a 409 means something still references
-// this row), so on failure we just surface the backend's explanation rather
-// than trying to predict which rows are deletable client-side.
+// this row), so on failure the button itself turns red and shows the
+// backend's explanation rather than trying to predict what's deletable.
 function DeleteButton({ onDelete, onDeleted }: { onDelete: () => Promise<void>; onDeleted: () => void }) {
-  const [error, setError] = useState<string | null>(null);
+  const [status, setStatus] = useState<"idle" | "pending" | "error">("idle");
+  const [message, setMessage] = useState<string | null>(null);
 
   async function handleClick() {
-    setError(null);
+    setStatus("pending");
+    setMessage(null);
     try {
       await onDelete();
       onDeleted();
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : "Failed to delete");
+      setStatus("error");
+      setMessage(err instanceof ApiError ? err.message : "Failed to delete");
+      window.setTimeout(() => setStatus("idle"), 3500);
     }
   }
 
   return (
-    <span className="delete-control">
-      <button type="button" className="delete-button" onClick={handleClick}>
-        Delete
-      </button>
-      {error && <span className="error"> {error}</span>}
-    </span>
+    <button
+      type="button"
+      className={"delete-button" + (status === "error" ? " error" : "")}
+      onClick={handleClick}
+      disabled={status === "pending"}
+    >
+      {status === "pending" ? "Deleting..." : status === "error" ? message : "Delete"}
+    </button>
   );
 }
 
@@ -164,17 +214,18 @@ export function AdminPage() {
 
 function InviteSection() {
   const [maxUses, setMaxUses] = useState("20");
-  const [result, setResult] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const [inviteCode, setInviteCode] = useState<string | null>(null);
+  const submit = useSubmitStatus();
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
-    setError(null);
+    submit.start();
     try {
       const invite = await createInvite(Number(maxUses), 90);
-      setResult(`Invite code: ${invite.code} (share this with friends)`);
+      setInviteCode(invite.code);
+      submit.succeed("Invite created.");
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : "Failed");
+      submit.fail(err instanceof ApiError ? err.message : "Failed");
     }
   }
 
@@ -185,9 +236,13 @@ function InviteSection() {
           Max uses
           <input type="number" value={maxUses} onChange={(e) => setMaxUses(e.target.value)} min={1} />
         </label>
-        <button type="submit">Create invite</button>
+        <SubmitButton status={submit.status} message={submit.message} idleLabel="Create invite" pendingLabel="Creating..." />
       </form>
-      <ResultLine result={result} error={error} />
+      {inviteCode && (
+        <p className="muted">
+          Invite code: <code>{inviteCode}</code> (share this with friends)
+        </p>
+      )}
     </Section>
   );
 }
@@ -203,20 +258,19 @@ function VenueSection({
 }) {
   const [name, setName] = useState("");
   const [address, setAddress] = useState("");
-  const [result, setResult] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const submit = useSubmitStatus();
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
-    setError(null);
+    submit.start();
     try {
       await createVenue({ name, address: address || null });
-      setResult("Venue created.");
+      submit.succeed("Venue created.");
       setName("");
       setAddress("");
       onCreated();
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : "Failed");
+      submit.fail(err instanceof ApiError ? err.message : "Failed");
     }
   }
 
@@ -231,14 +285,15 @@ function VenueSection({
           Address / location
           <input value={address} onChange={(e) => setAddress(e.target.value)} placeholder="Princeton, NJ" />
         </label>
-        <button type="submit">Create venue</button>
+        <SubmitButton status={submit.status} message={submit.message} idleLabel="Create venue" pendingLabel="Creating..." />
       </form>
-      <ResultLine result={result} error={error} />
       <ul className="entity-list">
         {venues.map((v) => (
           <li key={v.id}>
-            {v.name}
-            {v.address ? ` — ${v.address}` : ""}
+            <span>
+              {v.name}
+              {v.address ? ` — ${v.address}` : ""}
+            </span>
             <DeleteButton onDelete={() => deleteVenue(v.id)} onDeleted={onDeleted} />
           </li>
         ))}
@@ -262,12 +317,11 @@ function TeamSection({
   const [shortName, setShortName] = useState("");
   const [location, setLocation] = useState("");
   const [homeVenueId, setHomeVenueId] = useState("");
-  const [result, setResult] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const submit = useSubmitStatus();
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
-    setError(null);
+    submit.start();
     try {
       await createTeam({
         name,
@@ -275,14 +329,14 @@ function TeamSection({
         location: location || null,
         home_venue_id: homeVenueId || null,
       });
-      setResult("Team created.");
+      submit.succeed("Team created.");
       setName("");
       setShortName("");
       setLocation("");
       setHomeVenueId("");
       onCreated();
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : "Failed");
+      submit.fail(err instanceof ApiError ? err.message : "Failed");
     }
   }
 
@@ -312,13 +366,14 @@ function TeamSection({
             ))}
           </select>
         </label>
-        <button type="submit">Create team</button>
+        <SubmitButton status={submit.status} message={submit.message} idleLabel="Create team" pendingLabel="Creating..." />
       </form>
-      <ResultLine result={result} error={error} />
       <ul className="entity-list">
         {teams.map((t) => (
           <li key={t.id}>
-            {t.name} ({t.short_name})
+            <span>
+              {t.name} ({t.short_name})
+            </span>
             <DeleteButton onDelete={() => deleteTeam(t.id)} onDeleted={onDeleted} />
           </li>
         ))}
@@ -333,8 +388,8 @@ function SwimmerSection({ teams }: { teams: TeamOut[] }) {
   const [classStanding, setClassStanding] = useState("");
   const [csvFile, setCsvFile] = useState<File | null>(null);
   const [roster, setRoster] = useState<SwimmerOut[]>([]);
-  const [result, setResult] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const addSubmit = useSubmitStatus();
+  const csvSubmit = useSubmitStatus();
 
   const refreshRoster = () => {
     if (!teamId) {
@@ -348,29 +403,29 @@ function SwimmerSection({ teams }: { teams: TeamOut[] }) {
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
-    setError(null);
+    addSubmit.start();
     try {
       await createSwimmer(teamId, name, classStanding || null);
-      setResult("Swimmer added.");
+      addSubmit.succeed("Swimmer added.");
       setName("");
       setClassStanding("");
       refreshRoster();
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : "Failed");
+      addSubmit.fail(err instanceof ApiError ? err.message : "Failed");
     }
   }
 
   async function handleCsvUpload(e: FormEvent) {
     e.preventDefault();
-    setError(null);
     if (!csvFile) return;
+    csvSubmit.start();
     try {
       const added = await uploadRosterCsv(teamId, csvFile);
-      setResult(`${added.length} swimmer(s) added.`);
+      csvSubmit.succeed(`${added.length} swimmer(s) added.`);
       setCsvFile(null);
       refreshRoster();
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : "Failed");
+      csvSubmit.fail(err instanceof ApiError ? err.message : "Failed");
     }
   }
 
@@ -399,9 +454,13 @@ function SwimmerSection({ teams }: { teams: TeamOut[] }) {
           Class (optional)
           <input value={classStanding} onChange={(e) => setClassStanding(e.target.value)} placeholder="FR" />
         </label>
-        <button type="submit" disabled={!teamId}>
-          Add swimmer
-        </button>
+        <SubmitButton
+          status={addSubmit.status}
+          message={addSubmit.message}
+          idleLabel="Add swimmer"
+          pendingLabel="Adding..."
+          disabled={!teamId}
+        />
       </form>
 
       <form onSubmit={handleCsvUpload}>
@@ -413,17 +472,22 @@ function SwimmerSection({ teams }: { teams: TeamOut[] }) {
             onChange={(e) => setCsvFile(e.target.files?.[0] ?? null)}
           />
         </label>
-        <button type="submit" disabled={!teamId || !csvFile}>
-          Upload CSV
-        </button>
+        <SubmitButton
+          status={csvSubmit.status}
+          message={csvSubmit.message}
+          idleLabel="Upload CSV"
+          pendingLabel="Uploading..."
+          disabled={!teamId || !csvFile}
+        />
       </form>
-      <ResultLine result={result} error={error} />
 
       <ul className="entity-list">
         {roster.map((s) => (
           <li key={s.id}>
-            {s.name}
-            {s.class_standing ? ` (${s.class_standing})` : ""}
+            <span>
+              {s.name}
+              {s.class_standing ? ` (${s.class_standing})` : ""}
+            </span>
             <DeleteButton onDelete={() => deleteSwimmer(teamId, s.id)} onDeleted={refreshRoster} />
           </li>
         ))}
@@ -451,8 +515,7 @@ function MeetSection({
   const [awayTeamId, setAwayTeamId] = useState("");
   const [venueId, setVenueId] = useState("");
   const [scheduledAt, setScheduledAt] = useState("");
-  const [result, setResult] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const submit = useSubmitStatus();
 
   // Suggest the two teams' home venues first, so the common case (a dual
   // meet at one team's pool) is a top-of-list pick rather than a search.
@@ -467,7 +530,7 @@ function MeetSection({
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
-    setError(null);
+    submit.start();
     try {
       await createMeet({
         name,
@@ -481,11 +544,11 @@ function MeetSection({
         // browser's UTC offset (3pm submitted became 10am displayed).
         scheduled_at: scheduledAt ? new Date(scheduledAt).toISOString() : null,
       });
-      setResult("Meet created.");
+      submit.succeed("Meet created.");
       setName("");
       onCreated();
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : "Failed");
+      submit.fail(err instanceof ApiError ? err.message : "Failed");
     }
   }
 
@@ -552,13 +615,14 @@ function MeetSection({
           Date &amp; time (optional)
           <input type="datetime-local" value={scheduledAt} onChange={(e) => setScheduledAt(e.target.value)} />
         </label>
-        <button type="submit">Create meet</button>
+        <SubmitButton status={submit.status} message={submit.message} idleLabel="Create meet" pendingLabel="Creating..." />
       </form>
-      <ResultLine result={result} error={error} />
       <ul className="entity-list">
         {meets.map((m) => (
           <li key={m.id}>
-            {m.name} ({m.meet_type})
+            <span>
+              {m.name} ({m.meet_type})
+            </span>
             <DeleteButton onDelete={() => deleteMeet(m.id)} onDeleted={onDeleted} />
           </li>
         ))}
@@ -572,8 +636,7 @@ function MeetEventSection({ meets }: { meets: MeetOut[] }) {
   const [name, setName] = useState("");
   const [eventOrder, setEventOrder] = useState("0");
   const [events, setEvents] = useState<MeetEventOut[]>([]);
-  const [result, setResult] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const submit = useSubmitStatus();
 
   const refreshEvents = () => {
     if (!meetId) {
@@ -587,14 +650,14 @@ function MeetEventSection({ meets }: { meets: MeetOut[] }) {
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
-    setError(null);
+    submit.start();
     try {
       await createMeetEvent(meetId, name, Number(eventOrder));
-      setResult("Event added.");
+      submit.succeed("Event added.");
       setName("");
       refreshEvents();
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : "Failed");
+      submit.fail(err instanceof ApiError ? err.message : "Failed");
     }
   }
 
@@ -622,15 +685,18 @@ function MeetEventSection({ meets }: { meets: MeetOut[] }) {
           Order (lower runs first)
           <input type="number" value={eventOrder} onChange={(e) => setEventOrder(e.target.value)} />
         </label>
-        <button type="submit" disabled={!meetId}>
-          Add event
-        </button>
+        <SubmitButton
+          status={submit.status}
+          message={submit.message}
+          idleLabel="Add event"
+          pendingLabel="Adding..."
+          disabled={!meetId}
+        />
       </form>
-      <ResultLine result={result} error={error} />
       <ul className="entity-list">
         {events.map((ev) => (
           <li key={ev.id}>
-            {ev.name}
+            <span>{ev.name}</span>
             <DeleteButton onDelete={() => deleteMeetEvent(meetId, ev.id)} onDeleted={refreshEvents} />
           </li>
         ))}
@@ -657,8 +723,7 @@ function MarketGroupSection({
   const [meetId, setMeetId] = useState("");
   const [meetEventId, setMeetEventId] = useState("");
   const [events, setEvents] = useState<MeetEventOut[]>([]);
-  const [result, setResult] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const submit = useSubmitStatus();
 
   useEffect(() => {
     setMeetEventId("");
@@ -675,7 +740,7 @@ function MarketGroupSection({
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
-    setError(null);
+    submit.start();
     try {
       const group = await createMarketGroup({
         title,
@@ -683,12 +748,12 @@ function MarketGroupSection({
         meet_id: meetId || null,
         meet_event_id: meetEventId || null,
       });
-      setResult(`Outcome created with ${group.markets.length} market(s).`);
+      submit.succeed(`Outcome created with ${group.markets.length} market(s).`);
       setTitle("");
       setTeamIds([]);
       onCreated();
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : "Failed");
+      submit.fail(err instanceof ApiError ? err.message : "Failed");
     }
   }
 
@@ -734,15 +799,20 @@ function MarketGroupSection({
             </select>
           </label>
         )}
-        <button type="submit" disabled={teamIds.length === 0}>
-          Create outcome
-        </button>
+        <SubmitButton
+          status={submit.status}
+          message={submit.message}
+          idleLabel="Create outcome"
+          pendingLabel="Creating..."
+          disabled={teamIds.length === 0}
+        />
       </form>
-      <ResultLine result={result} error={error} />
       <ul className="entity-list">
         {groups.map((g) => (
           <li key={g.id}>
-            {g.title} ({g.status})
+            <span>
+              {g.title} ({g.status})
+            </span>
             {g.status !== "resolved" && (
               <DeleteButton onDelete={() => deleteMarketGroup(g.id)} onDeleted={onDeleted} />
             )}
@@ -756,18 +826,17 @@ function MarketGroupSection({
 function TickerSection({ meets }: { meets: MeetOut[] }) {
   const [meetId, setMeetId] = useState("");
   const [body, setBody] = useState("");
-  const [result, setResult] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const submit = useSubmitStatus();
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
-    setError(null);
+    submit.start();
     try {
       await postTickerUpdate(meetId, body);
-      setResult("Posted.");
+      submit.succeed("Posted.");
       setBody("");
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : "Failed");
+      submit.fail(err instanceof ApiError ? err.message : "Failed");
     }
   }
 
@@ -796,29 +865,31 @@ function TickerSection({ meets }: { meets: MeetOut[] }) {
             placeholder="Princeton wins the 200 Free Relay"
           />
         </label>
-        <button type="submit" disabled={!meetId}>
-          Post
-        </button>
+        <SubmitButton
+          status={submit.status}
+          message={submit.message}
+          idleLabel="Post"
+          pendingLabel="Posting..."
+          disabled={!meetId}
+        />
       </form>
-      <ResultLine result={result} error={error} />
     </Section>
   );
 }
 
 function CloseMarketSection({ groups, onChanged }: { groups: MarketGroupOut[]; onChanged: () => void }) {
   const [marketId, setMarketId] = useState("");
-  const [result, setResult] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const submit = useSubmitStatus();
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
-    setError(null);
+    submit.start();
     try {
       await closeMarket(marketId);
-      setResult("Market closed.");
+      submit.succeed("Market closed.");
       onChanged();
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : "Failed");
+      submit.fail(err instanceof ApiError ? err.message : "Failed");
     }
   }
 
@@ -842,11 +913,14 @@ function CloseMarketSection({ groups, onChanged }: { groups: MarketGroupOut[]; o
             ))}
           </select>
         </label>
-        <button type="submit" disabled={!marketId}>
-          Close market
-        </button>
+        <SubmitButton
+          status={submit.status}
+          message={submit.message}
+          idleLabel="Close market"
+          pendingLabel="Closing..."
+          disabled={!marketId}
+        />
       </form>
-      <ResultLine result={result} error={error} />
     </Section>
   );
 }
@@ -854,20 +928,19 @@ function CloseMarketSection({ groups, onChanged }: { groups: MarketGroupOut[]; o
 function ResolveSection({ groups, onResolved }: { groups: MarketGroupOut[]; onResolved: () => void }) {
   const [groupId, setGroupId] = useState("");
   const [winningMarketId, setWinningMarketId] = useState("");
-  const [result, setResult] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const submit = useSubmitStatus();
 
   const selectedGroup = groups.find((g) => g.id === groupId);
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
-    setError(null);
+    submit.start();
     try {
       await resolveMarketGroup(groupId, winningMarketId);
-      setResult("Outcome resolved — payouts sent.");
+      submit.succeed("Outcome resolved — payouts sent.");
       onResolved();
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : "Failed");
+      submit.fail(err instanceof ApiError ? err.message : "Failed");
     }
   }
 
@@ -911,11 +984,14 @@ function ResolveSection({ groups, onResolved }: { groups: MarketGroupOut[]; onRe
             </select>
           </label>
         )}
-        <button type="submit" disabled={!groupId || !winningMarketId}>
-          Resolve &amp; pay out
-        </button>
+        <SubmitButton
+          status={submit.status}
+          message={submit.message}
+          idleLabel="Resolve & pay out"
+          pendingLabel="Resolving..."
+          disabled={!groupId || !winningMarketId}
+        />
       </form>
-      <ResultLine result={result} error={error} />
     </Section>
   );
 }

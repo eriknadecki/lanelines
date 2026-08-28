@@ -83,22 +83,13 @@ a:hover {
   color: var(--success);
 }
 
-.form-banner {
-  padding: 8px 14px;
-  border-radius: 8px;
-  font-weight: 600;
-  font-size: 13px;
-  text-align: center;
+.submit-button.success {
+  background: var(--success);
+  color: white;
 }
-.form-banner.success {
-  background: rgba(21, 128, 61, 0.12);
-  color: var(--success);
-  border: 1px solid rgba(21, 128, 61, 0.35);
-}
-.form-banner.error {
-  background: rgba(185, 28, 28, 0.12);
-  color: var(--danger);
-  border: 1px solid rgba(185, 28, 28, 0.35);
+.submit-button.error {
+  background: var(--danger);
+  color: white;
 }
 
 button {
@@ -357,28 +348,25 @@ th {
   margin-bottom: 16px;
 }
 .admin-section h2 {
-  margin: 0 auto 16px;
-  max-width: 640px;
-  text-align: center;
+  margin: 0 0 16px;
+  max-width: 900px;
+  text-align: left;
 }
 .admin-section form {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: repeat(3, 1fr);
   gap: 2px 20px;
-  max-width: 640px;
-  margin: 0 auto 12px;
+  max-width: 900px;
+  margin: 0 0 12px;
 }
 .admin-section form > button {
   grid-column: 1 / -1;
-  justify-self: center;
+  justify-self: start;
   margin-top: 8px;
+  min-width: 160px;
 }
 .admin-section form .field-full {
   grid-column: 1 / -1;
-}
-.admin-section .form-banner {
-  max-width: 640px;
-  margin: 0 auto 12px;
 }
 
 .admin-layout {
@@ -421,7 +409,7 @@ th {
 }
 .admin-section > label:not(.checkbox-row) {
   max-width: 360px;
-  margin: 0 auto 10px;
+  margin: 0 0 10px;
 }
 .admin-content input:not([type="checkbox"]):not([type="file"]),
 .admin-content select {
@@ -450,23 +438,24 @@ th {
 
 .entity-list {
   list-style: none;
-  margin: 12px 0 0;
+  margin: 16px 0 0;
   padding: 0;
+  max-width: 900px;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 10px;
 }
 .entity-list li {
   display: flex;
   align-items: center;
+  justify-content: space-between;
   gap: 8px;
-  padding: 6px 0;
-  border-bottom: 1px solid var(--border);
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--bg-subtle);
   color: var(--text);
   font-size: 14px;
-}
-.delete-control {
-  margin-left: auto;
-  display: flex;
-  align-items: center;
-  gap: 6px;
 }
 .delete-button {
   background: transparent;
@@ -476,10 +465,16 @@ th {
   font-size: 12px;
   cursor: pointer;
   color: #c0392b;
+  flex-shrink: 0;
 }
 .delete-button:hover {
   background: #c0392b;
   color: white;
+}
+.delete-button.error {
+  background: var(--danger);
+  color: white;
+  border-color: var(--danger);
 }
 
 .ticker-feed li {
