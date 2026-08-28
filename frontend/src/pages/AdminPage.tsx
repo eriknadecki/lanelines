@@ -45,8 +45,8 @@ function Section({ title, children }: { title: string; children: React.ReactNode
 }
 
 function ResultLine({ result, error }: { result: string | null; error: string | null }) {
-  if (error) return <p className="error">{error}</p>;
-  if (result) return <p className="success">{result}</p>;
+  if (error) return <p className="form-banner error">{error}</p>;
+  if (result) return <p className="form-banner success">{result}</p>;
   return null;
 }
 
@@ -181,7 +181,7 @@ function InviteSection() {
   return (
     <Section title="Create invite">
       <form onSubmit={handleSubmit}>
-        <label>
+        <label className="field-full">
           Max uses
           <input type="number" value={maxUses} onChange={(e) => setMaxUses(e.target.value)} min={1} />
         </label>
@@ -210,8 +210,8 @@ function VenueSection({
     e.preventDefault();
     setError(null);
     try {
-      const venue = await createVenue({ name, address: address || null });
-      setResult(`Created venue "${venue.name}"`);
+      await createVenue({ name, address: address || null });
+      setResult("Venue created.");
       setName("");
       setAddress("");
       onCreated();
@@ -269,13 +269,13 @@ function TeamSection({
     e.preventDefault();
     setError(null);
     try {
-      const team = await createTeam({
+      await createTeam({
         name,
         short_name: shortName,
         location: location || null,
         home_venue_id: homeVenueId || null,
       });
-      setResult(`Created team "${team.name}"`);
+      setResult("Team created.");
       setName("");
       setShortName("");
       setLocation("");
@@ -350,8 +350,8 @@ function SwimmerSection({ teams }: { teams: TeamOut[] }) {
     e.preventDefault();
     setError(null);
     try {
-      const swimmer = await createSwimmer(teamId, name, classStanding || null);
-      setResult(`Added "${swimmer.name}" to the roster`);
+      await createSwimmer(teamId, name, classStanding || null);
+      setResult("Swimmer added.");
       setName("");
       setClassStanding("");
       refreshRoster();
@@ -366,7 +366,7 @@ function SwimmerSection({ teams }: { teams: TeamOut[] }) {
     if (!csvFile) return;
     try {
       const added = await uploadRosterCsv(teamId, csvFile);
-      setResult(`Added ${added.length} swimmer(s) from CSV`);
+      setResult(`${added.length} swimmer(s) added.`);
       setCsvFile(null);
       refreshRoster();
     } catch (err) {
@@ -405,7 +405,7 @@ function SwimmerSection({ teams }: { teams: TeamOut[] }) {
       </form>
 
       <form onSubmit={handleCsvUpload}>
-        <label>
+        <label className="field-full">
           Upload roster CSV (column 1: name, column 2: class — e.g. FR/SO/JR/SR)
           <input
             type="file"
@@ -469,7 +469,7 @@ function MeetSection({
     e.preventDefault();
     setError(null);
     try {
-      const meet = await createMeet({
+      await createMeet({
         name,
         meet_type: meetType,
         home_team_id: homeTeamId || null,
@@ -481,7 +481,7 @@ function MeetSection({
         // browser's UTC offset (3pm submitted became 10am displayed).
         scheduled_at: scheduledAt ? new Date(scheduledAt).toISOString() : null,
       });
-      setResult(`Created meet "${meet.name}"`);
+      setResult("Meet created.");
       setName("");
       onCreated();
     } catch (err) {
@@ -589,8 +589,8 @@ function MeetEventSection({ meets }: { meets: MeetOut[] }) {
     e.preventDefault();
     setError(null);
     try {
-      const event = await createMeetEvent(meetId, name, Number(eventOrder));
-      setResult(`Added event "${event.name}"`);
+      await createMeetEvent(meetId, name, Number(eventOrder));
+      setResult("Event added.");
       setName("");
       refreshEvents();
     } catch (err) {
@@ -683,7 +683,7 @@ function MarketGroupSection({
         meet_id: meetId || null,
         meet_event_id: meetEventId || null,
       });
-      setResult(`Created "${group.title}" with ${group.markets.length} outcome(s)`);
+      setResult(`Outcome created with ${group.markets.length} market(s).`);
       setTitle("");
       setTeamIds([]);
       onCreated();
@@ -695,11 +695,11 @@ function MarketGroupSection({
   return (
     <Section title="Create outcome (what people can bet on)">
       <form onSubmit={handleSubmit}>
-        <label>
+        <label className="field-full">
           Title
           <input value={title} onChange={(e) => setTitle(e.target.value)} required placeholder="Who wins the meet?" />
         </label>
-        <label>
+        <label className="field-full">
           Teams (one market per team you check)
           <div className="checkbox-list">
             {teams.map((t) => (
@@ -814,8 +814,8 @@ function CloseMarketSection({ groups, onChanged }: { groups: MarketGroupOut[]; o
     e.preventDefault();
     setError(null);
     try {
-      const market = await closeMarket(marketId);
-      setResult(`Market is now ${market.status}`);
+      await closeMarket(marketId);
+      setResult("Market closed.");
       onChanged();
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "Failed");
@@ -825,7 +825,7 @@ function CloseMarketSection({ groups, onChanged }: { groups: MarketGroupOut[]; o
   return (
     <Section title="Close market (halt trading)">
       <form onSubmit={handleSubmit}>
-        <label>
+        <label className="field-full">
           Market
           <select value={marketId} onChange={(e) => setMarketId(e.target.value)} required>
             <option value="" disabled>
@@ -863,8 +863,8 @@ function ResolveSection({ groups, onResolved }: { groups: MarketGroupOut[]; onRe
     e.preventDefault();
     setError(null);
     try {
-      const group = await resolveMarketGroup(groupId, winningMarketId);
-      setResult(`Resolved "${group.title}" — payouts sent.`);
+      await resolveMarketGroup(groupId, winningMarketId);
+      setResult("Outcome resolved — payouts sent.");
       onResolved();
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "Failed");

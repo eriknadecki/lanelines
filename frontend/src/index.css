@@ -83,6 +83,24 @@ a:hover {
   color: var(--success);
 }
 
+.form-banner {
+  padding: 8px 14px;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 13px;
+  text-align: center;
+}
+.form-banner.success {
+  background: rgba(21, 128, 61, 0.12);
+  color: var(--success);
+  border: 1px solid rgba(21, 128, 61, 0.35);
+}
+.form-banner.error {
+  background: rgba(185, 28, 28, 0.12);
+  color: var(--danger);
+  border: 1px solid rgba(185, 28, 28, 0.35);
+}
+
 button {
   font: inherit;
   background: var(--accent);
@@ -335,8 +353,32 @@ th {
 .admin-section {
   border: 1px solid var(--border);
   border-radius: 10px;
-  padding: 16px;
+  padding: 8px 16px 16px;
   margin-bottom: 16px;
+}
+.admin-section h2 {
+  margin: 0 auto 16px;
+  max-width: 640px;
+  text-align: center;
+}
+.admin-section form {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2px 20px;
+  max-width: 640px;
+  margin: 0 auto 12px;
+}
+.admin-section form > button {
+  grid-column: 1 / -1;
+  justify-self: center;
+  margin-top: 8px;
+}
+.admin-section form .field-full {
+  grid-column: 1 / -1;
+}
+.admin-section .form-banner {
+  max-width: 640px;
+  margin: 0 auto 12px;
 }
 
 .admin-layout {
@@ -374,8 +416,12 @@ th {
   flex: 1;
   min-width: 0;
 }
-.admin-content label:not(.checkbox-row) {
-  max-width: 520px;
+.admin-section form label {
+  max-width: none;
+}
+.admin-section > label:not(.checkbox-row) {
+  max-width: 360px;
+  margin: 0 auto 10px;
 }
 .admin-content input:not([type="checkbox"]):not([type="file"]),
 .admin-content select {
