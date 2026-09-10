@@ -8,6 +8,7 @@ import { MarketsListPage } from "./pages/MarketsListPage";
 import { MeetDetailPage } from "./pages/MeetDetailPage";
 import { MeetsListPage } from "./pages/MeetsListPage";
 import { PortfolioPage } from "./pages/PortfolioPage";
+import { SettingsPage } from "./pages/SettingsPage";
 import { SignupPage } from "./pages/SignupPage";
 
 export default function App() {
@@ -26,6 +27,14 @@ export default function App() {
           element={
             <RequireAuth>
               <PortfolioPage />
+            </RequireAuth>
+          }
+        />
+        <Route
+          path="/settings"
+          element={
+            <RequireAuth>
+              <SettingsPage />
             </RequireAuth>
           }
         />

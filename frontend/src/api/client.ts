@@ -149,6 +149,12 @@ export const getMe = () => apiFetch<UserOut>("/api/v1/me");
 export const getBalance = () => apiFetch<BalanceOut>("/api/v1/me/balance");
 export const getPositions = () => apiFetch<PositionOut[]>("/api/v1/me/positions");
 
+export const changePassword = (current_password: string, new_password: string) =>
+  apiFetch<void>("/api/v1/me/password", {
+    method: "POST",
+    body: JSON.stringify({ current_password, new_password }),
+  });
+
 // --- markets ---
 export const listMarketGroups = () => apiFetch<MarketGroupOut[]>("/api/v1/markets");
 export const getMarket = (marketId: string) => apiFetch<MarketOut>(`/api/v1/markets/${marketId}`);

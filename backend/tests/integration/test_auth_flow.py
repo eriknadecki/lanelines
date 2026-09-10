@@ -88,6 +88,65 @@ def test_login_with_correct_and_incorrect_password(client, db_session):
     assert bad.status_code == 401
 
 
+def test_change_password_with_correct_current_password(client, db_session):
+    invite = _make_invite(db_session)
+    signup = client.post(
+        "/api/v1/auth/signup",
+        json={
+            "invite_code": invite.code,
+            "email": "changepw@example.com",
+            "username": "changepwuser",
+            "password": "originalpass1",
+        },
+    )
+    access_token = signup.json()["access_token"]
+    headers = {"Authorization": f"Bearer {access_token}"}
+
+    resp = client.post(
+        "/api/v1/me/password",
+        headers=headers,
+        json={"current_password": "originalpass1", "new_password": "newpassword2"},
+    )
+    assert resp.status_code == 204
+
+    old_login = client.post(
+        "/api/v1/auth/login", json={"email": "changepw@example.com", "password": "originalpass1"}
+    )
+    assert old_login.status_code == 401
+
+    new_login = client.post(
+        "/api/v1/auth/login", json={"email": "changepw@example.com", "password": "newpassword2"}
+    )
+    assert new_login.status_code == 200
+
+
+def test_change_password_rejects_wrong_current_password(client, db_session):
+    invite = _make_invite(db_session)
+    signup = client.post(
+        "/api/v1/auth/signup",
+        json={
+            "invite_code": invite.code,
+            "email": "wrongcurrent@example.com",
+            "username": "wrongcurrentuser",
+            "password": "originalpass1",
+        },
+    )
+    access_token = signup.json()["access_token"]
+    headers = {"Authorization": f"Bearer {access_token}"}
+
+    resp = client.post(
+        "/api/v1/me/password",
+        headers=headers,
+        json={"current_password": "notmypassword", "new_password": "newpassword2"},
+    )
+    assert resp.status_code == 401
+
+    still_works = client.post(
+        "/api/v1/auth/login", json={"email": "wrongcurrent@example.com", "password": "originalpass1"}
+    )
+    assert still_works.status_code == 200
+
+
 def test_ledger_group_sums_to_zero_after_signup(client, db_session):
     invite = _make_invite(db_session)
     client.post(

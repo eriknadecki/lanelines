@@ -101,3 +101,10 @@ def authenticate(db: Session, email: str, password: str) -> User:
     if user is None or not verify_password(password, user.password_hash):
         raise InvalidCredentialsError("Invalid email or password")
     return user
+
+
+def change_password(db: Session, user: User, current_password: str, new_password: str) -> None:
+    if not verify_password(current_password, user.password_hash):
+        raise InvalidCredentialsError("Current password is incorrect")
+    user.password_hash = hash_password(new_password)
+    db.commit()

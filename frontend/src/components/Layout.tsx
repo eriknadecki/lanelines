@@ -1,11 +1,7 @@
-import { useEffect, useState } from "react";
 import { Link, NavLink, Outlet } from "react-router-dom";
-import { getBalance } from "../api/client";
-import { useLiveChannels } from "../api/ws";
 import { useAuth } from "../auth/AuthContext";
 import { SearchBox } from "./SearchBox";
 import { TopLoadingBar } from "./TopLoadingBar";
-import type { BalanceOut } from "../api/types";
 
 function Logo() {
   return (
@@ -36,28 +32,26 @@ function Logo() {
   );
 }
 
+function SettingsIcon() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <circle cx="12" cy="12" r="3" stroke="currentColor" strokeWidth="2" />
+      <path
+        d="M19.4 13a7.97 7.97 0 0 0 0-2l2.03-1.58a.5.5 0 0 0 .12-.64l-1.92-3.32a.5.5 0 0 0-.6-.22l-2.39.96a7.99 7.99 0 0 0-1.73-1l-.36-2.54a.5.5 0 0 0-.5-.43h-3.84a.5.5 0 0 0-.5.43l-.36 2.54c-.63.26-1.22.6-1.73 1l-2.39-.96a.5.5 0 0 0-.6.22L2.7 8.78a.5.5 0 0 0 .12.64L4.85 11a7.97 7.97 0 0 0 0 2l-2.03 1.58a.5.5 0 0 0-.12.64l1.92 3.32c.14.24.42.32.6.22l2.39-.96c.51.4 1.1.74 1.73 1l.36 2.54c.05.25.26.43.5.43h3.84c.24 0 .45-.18.5-.43l.36-2.54c.63-.26 1.22-.6 1.73-1l2.39.96c.24.1.46 0 .6-.22l1.92-3.32a.5.5 0 0 0-.12-.64L19.4 13Z"
+        stroke="currentColor"
+        strokeWidth="1.5"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
 function navLinkClassName({ isActive }: { isActive: boolean }): string {
   return "nav-link" + (isActive ? " active" : "");
 }
 
 export function Layout() {
   const { user, logout } = useAuth();
-  const [balance, setBalance] = useState<BalanceOut | null>(null);
-
-  useEffect(() => {
-    if (!user) return;
-    getBalance().then(setBalance).catch(() => {});
-  }, [user]);
-
-  useLiveChannels([], (event) => {
-    if (event.type === "balance_update") {
-      setBalance((prev) => ({
-        cash_balance_cents: event.cash_balance_cents,
-        available_cents: event.available_cents,
-        held_collateral_cents: prev ? prev.cash_balance_cents - prev.available_cents : 0,
-      }));
-    }
-  });
 
   return (
     <div className="app-shell">
@@ -73,11 +67,6 @@ export function Layout() {
           <NavLink to="/meets" className={navLinkClassName}>
             Meets
           </NavLink>
-          {user && (
-            <NavLink to="/portfolio" className={navLinkClassName}>
-              Portfolio
-            </NavLink>
-          )}
           {user?.role === "admin" && (
             <NavLink to="/admin" className={navLinkClassName}>
               Admin
@@ -88,8 +77,12 @@ export function Layout() {
         <div className="topbar-right">
           {user ? (
             <>
-              {balance && <span className="balance-pill">${(balance.available_cents / 100).toFixed(2)}</span>}
-              <span className="username">{user.username}</span>
+              <Link to="/portfolio" className="username">
+                {user.username}
+              </Link>
+              <Link to="/settings" className="settings-link" aria-label="Settings">
+                <SettingsIcon />
+              </Link>
               <button onClick={logout}>Log out</button>
             </>
           ) : (

@@ -195,16 +195,22 @@ th {
   align-items: center;
   gap: 12px;
 }
-.balance-pill {
-  background: var(--bg-subtle);
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  padding: 4px 12px;
-  font-weight: 600;
-  color: var(--text-h);
-}
 .username {
   color: var(--text-muted);
+  transition: color 150ms ease-out;
+}
+.username:hover {
+  color: var(--text-h);
+  text-decoration: none;
+}
+.settings-link {
+  display: flex;
+  align-items: center;
+  color: var(--text-muted);
+  transition: color 150ms ease-out;
+}
+.settings-link:hover {
+  color: var(--text-h);
 }
 
 .content {
