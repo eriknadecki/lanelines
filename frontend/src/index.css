@@ -187,11 +187,8 @@ th {
   text-decoration: none;
 }
 .nav-link.active {
-  background: var(--accent);
-  color: var(--accent-contrast);
-}
-.nav-link.active:hover {
-  background: var(--accent);
+  color: var(--text-h);
+  font-weight: 700;
 }
 .topbar-right {
   display: flex;
