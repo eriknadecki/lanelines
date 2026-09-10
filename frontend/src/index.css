@@ -170,25 +170,8 @@ th {
   font-weight: 700;
   color: var(--text-h);
 }
-.topbar nav {
-  display: flex;
-  gap: 4px;
-  flex: 1;
-}
-.nav-link {
-  padding: 6px 14px;
-  border-radius: 8px;
-  color: var(--text-muted);
-  font-weight: 500;
-  transition: color 150ms ease-out;
-}
-.nav-link:hover {
-  color: var(--text-h);
-  text-decoration: none;
-}
-.nav-link.active {
-  color: var(--text-h);
-  font-weight: 700;
+.brand-name {
+  font-size: 17px;
 }
 .topbar-right {
   display: flex;
@@ -524,8 +507,7 @@ th {
 
 .search-box {
   position: relative;
-  margin-left: 8px;
-  align-self: center;
+  flex: 1;
 }
 .search-box input {
   width: 300px;

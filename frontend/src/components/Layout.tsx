@@ -1,4 +1,4 @@
-import { Link, NavLink, Outlet } from "react-router-dom";
+import { Link, Outlet } from "react-router-dom";
 import { useAuth } from "../auth/AuthContext";
 import { SearchBox } from "./SearchBox";
 import { TopLoadingBar } from "./TopLoadingBar";
@@ -46,12 +46,8 @@ function SettingsIcon() {
   );
 }
 
-function navLinkClassName({ isActive }: { isActive: boolean }): string {
-  return "nav-link" + (isActive ? " active" : "");
-}
-
 export function Layout() {
-  const { user, logout } = useAuth();
+  const { user } = useAuth();
 
   return (
     <div className="app-shell">
@@ -59,21 +55,9 @@ export function Layout() {
       <header className="topbar">
         <Link to="/markets" className="brand">
           <Logo />
+          <span className="brand-name">Lanelines</span>
         </Link>
-        <nav>
-          <NavLink to="/markets" className={navLinkClassName}>
-            Markets
-          </NavLink>
-          <NavLink to="/meets" className={navLinkClassName}>
-            Meets
-          </NavLink>
-          {user?.role === "admin" && (
-            <NavLink to="/admin" className={navLinkClassName}>
-              Admin
-            </NavLink>
-          )}
-          <SearchBox />
-        </nav>
+        <SearchBox />
         <div className="topbar-right">
           {user ? (
             <>
@@ -83,7 +67,6 @@ export function Layout() {
               <Link to="/settings" className="settings-link" aria-label="Settings">
                 <SettingsIcon />
               </Link>
-              <button onClick={logout}>Log out</button>
             </>
           ) : (
             <Link to="/login">Log in</Link>

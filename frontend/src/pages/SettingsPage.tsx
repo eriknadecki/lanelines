@@ -1,4 +1,5 @@
 import { useState, type FormEvent } from "react";
+import { Link } from "react-router-dom";
 import { ApiError, changePassword } from "../api/client";
 import { useAuth } from "../auth/AuthContext";
 
@@ -100,7 +101,7 @@ function ChangePasswordForm() {
 }
 
 export function SettingsPage() {
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
 
   return (
     <div>
@@ -110,6 +111,14 @@ export function SettingsPage() {
         <p className="muted">
           {user?.username} — {user?.email}
         </p>
+        {user?.role === "admin" && (
+          <p>
+            <Link to="/admin">Admin panel</Link>
+          </p>
+        )}
+        <button type="button" onClick={logout}>
+          Log out
+        </button>
       </section>
       <section className="admin-section">
         <h2>Change password</h2>
