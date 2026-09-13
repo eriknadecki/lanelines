@@ -1,9 +1,19 @@
 import uuid
 from datetime import datetime
+from enum import StrEnum
 
 from pydantic import BaseModel, Field
 
 from app.db.models.market import MarketGroupStatus, MarketOutcome, MarketStatus
+
+
+class MarketCategory(StrEnum):
+    trending = "trending"
+    live = "live"
+    dual_tri = "dual_tri"
+    invite = "invite"
+    championship = "championship"
+    event_result = "event_result"
 
 
 class CreateMarketGroupRequest(BaseModel):

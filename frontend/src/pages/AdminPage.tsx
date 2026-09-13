@@ -31,9 +31,12 @@ import type {
   MeetOut,
   MeetType,
   SwimmerOut,
+  TeamConference,
+  TeamDivision,
   TeamOut,
   VenueOut,
 } from "../api/types";
+import { TEAM_CONFERENCES, TEAM_DIVISIONS } from "../constants";
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
@@ -360,6 +363,8 @@ function TeamSection({
   const [shortName, setShortName] = useState("");
   const [location, setLocation] = useState("");
   const [homeVenueId, setHomeVenueId] = useState("");
+  const [division, setDivision] = useState<TeamDivision | "">("");
+  const [conference, setConference] = useState<TeamConference | "">("");
   const submit = useSubmitStatus();
   const validation = useValidation();
 
@@ -376,12 +381,16 @@ function TeamSection({
         short_name: shortName,
         location: location || null,
         home_venue_id: homeVenueId || null,
+        division: division || null,
+        conference: conference || null,
       });
       submit.succeed("Team created.");
       setName("");
       setShortName("");
       setLocation("");
       setHomeVenueId("");
+      setDivision("");
+      setConference("");
       onCreated();
     } catch (err) {
       submit.fail(err instanceof ApiError ? err.message : "Failed");
@@ -424,6 +433,28 @@ function TeamSection({
             ))}
           </select>
         </label>
+        <label>
+          Division
+          <select value={division} onChange={(e) => setDivision(e.target.value as TeamDivision | "")}>
+            <option value="">None</option>
+            {TEAM_DIVISIONS.map((d) => (
+              <option key={d} value={d}>
+                {d}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label>
+          Conference
+          <select value={conference} onChange={(e) => setConference(e.target.value as TeamConference | "")}>
+            <option value="">None</option>
+            {TEAM_CONFERENCES.map((c) => (
+              <option key={c} value={c}>
+                {c}
+              </option>
+            ))}
+          </select>
+        </label>
         <SubmitButton status={submit.status} message={submit.message} idleLabel="Create team" pendingLabel="Creating..." />
       </form>
       <ul className="entity-list">
@@ -431,6 +462,8 @@ function TeamSection({
           <li key={t.id}>
             <span>
               {t.name} ({t.short_name})
+              {t.division && <span className="muted"> — {t.division}</span>}
+              {t.conference && <span className="muted">, {t.conference}</span>}
             </span>
             <DeleteButton onDelete={() => deleteTeam(t.id)} onDeleted={onDeleted} />
           </li>

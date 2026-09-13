@@ -6,7 +6,7 @@ from app.db.models.meet import Meet, MeetEvent, MeetEventStatus, MeetStatus, Mee
 from app.db.models.order import Order
 from app.db.models.position import Position
 from app.db.models.swimmer import Swimmer
-from app.db.models.team import Team
+from app.db.models.team import Team, TeamConference, TeamDivision
 from app.db.models.ticker_update import TickerUpdate
 from app.db.models.trade import Trade
 from app.db.models.user import User, UserRole
@@ -32,6 +32,8 @@ __all__ = [
     "Position",
     "Swimmer",
     "Team",
+    "TeamConference",
+    "TeamDivision",
     "TickerUpdate",
     "Trade",
     "User",

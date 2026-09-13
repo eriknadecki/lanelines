@@ -1,21 +1,32 @@
 import uuid
 
-from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy import select
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session
 
 from app.core.deps import get_engine
-from app.db.models import Market, MarketGroup
+from app.db.models import Market, MarketGroup, TeamConference, TeamDivision
 from app.db.session import get_db
-from app.schemas.market import BookSnapshotOut, MarketGroupOut, MarketOut, PriceLevelOut
+from app.schemas.market import (
+    BookSnapshotOut,
+    MarketCategory,
+    MarketGroupOut,
+    MarketOut,
+    PriceLevelOut,
+)
+from app.services import market_service
 from engine.engine import MatchingEngine
 
 router = APIRouter(prefix="/markets", tags=["markets"])
 
 
 @router.get("", response_model=list[MarketGroupOut])
-def list_market_groups(db: Session = Depends(get_db)) -> list[MarketGroup]:
-    return list(db.execute(select(MarketGroup)).scalars().all())
+def list_market_groups(
+    category: MarketCategory | None = Query(None),
+    division: TeamDivision | None = Query(None),
+    conference: TeamConference | None = Query(None),
+    db: Session = Depends(get_db),
+) -> list[MarketGroup]:
+    return market_service.list_market_groups(db, category=category, division=division, conference=conference)
 
 
 @router.get("/{market_id}", response_model=MarketOut)

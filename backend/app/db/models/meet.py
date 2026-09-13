@@ -13,6 +13,7 @@ class MeetType(StrEnum):
     dual = "dual"
     tri = "tri"
     championship = "championship"
+    invite = "invite"
 
 
 class MeetStatus(StrEnum):

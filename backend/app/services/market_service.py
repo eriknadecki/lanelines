@@ -1,13 +1,81 @@
 import uuid
 from datetime import datetime
 
-from sqlalchemy import func, select
-from sqlalchemy.orm import Session
+from sqlalchemy import func, or_, select
+from sqlalchemy.orm import Session, aliased
 
-from app.db.models import Market, MarketGroup, MarketGroupStatus, MarketStatus, Order, Team, Trade
+from app.db.models import (
+    Market,
+    MarketGroup,
+    MarketGroupStatus,
+    MarketStatus,
+    Meet,
+    MeetStatus,
+    MeetType,
+    Order,
+    Team,
+    TeamConference,
+    TeamDivision,
+    Trade,
+)
+from app.schemas.market import MarketCategory
 from app.services.errors import DeletionBlockedError, NotFoundError
 from app.services.order_cancellation import cancel_open_orders
 from engine.engine import MatchingEngine
+
+_MEET_TYPE_CATEGORIES = {
+    MarketCategory.dual_tri: (MeetType.dual, MeetType.tri),
+    MarketCategory.invite: (MeetType.invite,),
+    MarketCategory.championship: (MeetType.championship,),
+}
+
+
+def list_market_groups(
+    db: Session,
+    *,
+    category: MarketCategory | None = None,
+    division: TeamDivision | None = None,
+    conference: TeamConference | None = None,
+) -> list[MarketGroup]:
+    query = select(MarketGroup)
+
+    needs_meet_join = (
+        category in (MarketCategory.live, *_MEET_TYPE_CATEGORIES) or division is not None or conference is not None
+    )
+    if needs_meet_join:
+        query = query.join(Meet, MarketGroup.meet_id == Meet.id)
+
+    if category == MarketCategory.event_result:
+        query = query.where(MarketGroup.meet_event_id.is_not(None))
+    elif category == MarketCategory.live:
+        query = query.where(Meet.status == MeetStatus.live)
+    elif category in _MEET_TYPE_CATEGORIES:
+        query = query.where(Meet.meet_type.in_(_MEET_TYPE_CATEGORIES[category]))
+
+    if division is not None or conference is not None:
+        home_team = aliased(Team)
+        away_team = aliased(Team)
+        query = query.outerjoin(home_team, Meet.home_team_id == home_team.id).outerjoin(
+            away_team, Meet.away_team_id == away_team.id
+        )
+        if division is not None:
+            query = query.where(or_(home_team.division == division, away_team.division == division))
+        if conference is not None:
+            query = query.where(or_(home_team.conference == conference, away_team.conference == conference))
+
+    if category == MarketCategory.trending:
+        trade_counts = (
+            select(Market.market_group_id.label("market_group_id"), func.count(Trade.id).label("trade_count"))
+            .outerjoin(Trade, Trade.market_id == Market.id)
+            .group_by(Market.market_group_id)
+            .subquery()
+        )
+        query = query.outerjoin(trade_counts, trade_counts.c.market_group_id == MarketGroup.id)
+        query = query.order_by(trade_counts.c.trade_count.desc().nulls_last(), MarketGroup.created_at.desc())
+    else:
+        query = query.order_by(MarketGroup.created_at.desc())
+
+    return list(db.execute(query).scalars().all())
 
 
 def create_market_group(

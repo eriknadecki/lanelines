@@ -4,7 +4,17 @@ from datetime import datetime
 from sqlalchemy import or_, select
 from sqlalchemy.orm import Session
 
-from app.db.models import Market, MarketGroup, Meet, MeetEvent, MeetType, Team, TickerUpdate
+from app.db.models import (
+    Market,
+    MarketGroup,
+    Meet,
+    MeetEvent,
+    MeetType,
+    Team,
+    TeamConference,
+    TeamDivision,
+    TickerUpdate,
+)
 from app.services.errors import AlreadyExistsError, DeletionBlockedError, NotFoundError
 
 
@@ -15,12 +25,21 @@ def create_team(
     short_name: str,
     location: str | None,
     home_venue_id: uuid.UUID | None,
+    division: TeamDivision | None = None,
+    conference: TeamConference | None = None,
 ) -> Team:
     existing = db.execute(select(Team.id).where(Team.name == name)).scalar_one_or_none()
     if existing is not None:
         raise AlreadyExistsError("A team with that name already exists")
 
-    team = Team(name=name, short_name=short_name, location=location, home_venue_id=home_venue_id)
+    team = Team(
+        name=name,
+        short_name=short_name,
+        location=location,
+        home_venue_id=home_venue_id,
+        division=division,
+        conference=conference,
+    )
     db.add(team)
     db.commit()
     db.refresh(team)

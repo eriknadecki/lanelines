@@ -4,6 +4,7 @@ import type {
   BookSnapshotOut,
   InviteCheckOut,
   InviteOut,
+  MarketCategory,
   MarketGroupOut,
   MarketOut,
   MeetEventOut,
@@ -12,6 +13,8 @@ import type {
   PositionOut,
   SearchResultsOut,
   SwimmerOut,
+  TeamConference,
+  TeamDivision,
   TeamOut,
   TickerUpdateOut,
   TokenResponse,
@@ -156,7 +159,20 @@ export const changePassword = (current_password: string, new_password: string) =
   });
 
 // --- markets ---
-export const listMarketGroups = () => apiFetch<MarketGroupOut[]>("/api/v1/markets");
+export interface ListMarketGroupsParams {
+  category?: MarketCategory;
+  division?: TeamDivision;
+  conference?: TeamConference;
+}
+
+export const listMarketGroups = (params: ListMarketGroupsParams = {}) => {
+  const query = new URLSearchParams();
+  if (params.category) query.set("category", params.category);
+  if (params.division) query.set("division", params.division);
+  if (params.conference) query.set("conference", params.conference);
+  const qs = query.toString();
+  return apiFetch<MarketGroupOut[]>(`/api/v1/markets${qs ? `?${qs}` : ""}`);
+};
 export const getMarket = (marketId: string) => apiFetch<MarketOut>(`/api/v1/markets/${marketId}`);
 export const getMarketBook = (marketId: string, depth = 10) =>
   apiFetch<BookSnapshotOut>(`/api/v1/markets/${marketId}/book?depth=${depth}`);
@@ -207,6 +223,8 @@ export interface CreateTeamRequest {
   short_name: string;
   location?: string | null;
   home_venue_id?: string | null;
+  division?: TeamDivision | null;
+  conference?: TeamConference | null;
 }
 
 export const createTeam = (payload: CreateTeamRequest) =>

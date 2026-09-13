@@ -120,6 +120,8 @@ def create_team(
             short_name=payload.short_name,
             location=payload.location,
             home_venue_id=payload.home_venue_id,
+            division=payload.division,
+            conference=payload.conference,
         )
     except ServiceError as exc:
         raise _to_http_error(exc) from exc

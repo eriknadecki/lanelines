@@ -217,6 +217,37 @@ th {
   background: var(--bg-subtle);
 }
 
+.category-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+  margin-bottom: 20px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--border);
+}
+.category-tab {
+  background: transparent;
+  color: var(--text-muted);
+  border: none;
+  border-radius: 8px;
+  padding: 6px 14px;
+  font-weight: 500;
+  transition: color 150ms ease-out;
+}
+.category-tab:hover {
+  color: var(--text-h);
+}
+.category-tab.active {
+  color: var(--text-h);
+  font-weight: 700;
+}
+.category-filters {
+  display: flex;
+  gap: 8px;
+  margin-left: auto;
+}
+
 .market-list,
 .meet-list,
 .ticker-feed {
