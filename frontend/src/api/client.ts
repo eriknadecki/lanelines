@@ -9,6 +9,7 @@ import type {
   MarketOut,
   MeetEventOut,
   MeetOut,
+  MeetType,
   OrderOut,
   PositionOut,
   SearchResultsOut,
@@ -276,7 +277,7 @@ export const deleteTeam = (teamId: string) => apiFetch<void>(`/api/v1/admin/team
 
 export interface CreateMeetRequest {
   name: string;
-  meet_type: "dual" | "tri" | "championship";
+  meet_type: MeetType;
   home_team_id?: string | null;
   away_team_id?: string | null;
   scheduled_at?: string | null;

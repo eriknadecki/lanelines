@@ -676,6 +676,7 @@ function MeetSection({
             <option value="dual">Dual meet</option>
             <option value="tri">Tri-meet</option>
             <option value="championship">Championship</option>
+            <option value="invite">Invite</option>
           </select>
         </label>
         <label>
